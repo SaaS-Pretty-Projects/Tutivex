@@ -1,0 +1,44 @@
+# mirror-to-org.yml
+# ------------------
+# Drop this file into ANY personal-account AI Studio repo.
+# On every push to main, it pushes an identical copy to the
+# matching repo under SaaS-Pretty-Projects org.
+#
+# Setup:
+#   1. Create a PAT with `repo` scope at https://github.com/settings/tokens
+#   2. Add it as a repo secret: Settings → Secrets → SAAS_ORG_TOKEN
+#   3. Set the ORG_REPO secret (or edit below) to "SaaS-Pretty-Projects/<repo-name>"
+#
+# That's it — every AI Studio publish will automatically mirror to the org.
+
+name: Mirror to SaaS-Pretty-Projects org
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to org repo
+        env:
+          ORG_TOKEN: ${{ secrets.SAAS_ORG_TOKEN }}
+          # Override via repo secret, or hard-code the org repo name here:
+          ORG_REPO: ${{ secrets.ORG_REPO_NAME }}
+        run: |
+          if [ -z "$ORG_REPO" ]; then
+            # Auto-derive org repo from current repo name
+            CURRENT_REPO="${{ github.repository }}"
+            REPO_NAME="${CURRENT_REPO##*/}"
+            ORG_REPO="SaaS-Pretty-Projects/${REPO_NAME}"
+          fi
+          echo "Mirroring to https://github.com/${ORG_REPO}"
+          git remote add org "https://x-access-token:${ORG_TOKEN}@github.com/${ORG_REPO}.git"
+          git push org main --force
+          echo "✓ Mirrored to ${ORG_REPO}"

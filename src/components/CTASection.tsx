@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import {type FormEvent, useRef, useState} from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { motion, useInView, AnimatePresence } from 'motion/react';
 
@@ -8,7 +8,7 @@ export default function CTASection() {
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email) return;
     

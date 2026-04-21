@@ -1,0 +1,192 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/theme.json",
+  "version": 3,
+  "settings": {
+    "color": {
+      "palette": [
+        {
+          "slug": "primary",
+          "color": "#ff7aac",
+          "name": "Primary"
+        },
+        {
+          "slug": "secondary",
+          "color": "#121117",
+          "name": "Secondary"
+        },
+        {
+          "slug": "accent",
+          "color": "#99c5ff",
+          "name": "Accent"
+        },
+        {
+          "slug": "neutral-1",
+          "color": "#ffffff",
+          "name": "Neutral 1"
+        },
+        {
+          "slug": "neutral-2",
+          "color": "#384047",
+          "name": "Neutral 2"
+        },
+        {
+          "slug": "neutral-3",
+          "color": "#4d4c5c",
+          "name": "Neutral 3"
+        },
+        {
+          "slug": "neutral-4",
+          "color": "#dcdce5",
+          "name": "Neutral 4"
+        },
+        {
+          "slug": "neutral-5",
+          "color": "#000000",
+          "name": "Neutral 5"
+        },
+        {
+          "slug": "bg-141414",
+          "color": "#141414",
+          "name": "Background #141414"
+        },
+        {
+          "slug": "bg-ff7aac",
+          "color": "#ff7aac",
+          "name": "Background #ff7aac"
+        },
+        {
+          "slug": "bg-ffffff",
+          "color": "#ffffff",
+          "name": "Background #ffffff"
+        }
+      ],
+      "gradients": []
+    },
+    "typography": {
+      "fontFamilies": [
+        {
+          "fontFamily": "Figtree",
+          "slug": "figtree",
+          "name": "Figtree"
+        },
+        {
+          "fontFamily": "PreplyInterV",
+          "slug": "preplyinterv",
+          "name": "PreplyInterV"
+        },
+        {
+          "fontFamily": "Platform",
+          "slug": "platform",
+          "name": "Platform"
+        },
+        {
+          "fontFamily": "BlinkMacSystemFont",
+          "slug": "blinkmacsystemfont",
+          "name": "BlinkMacSystemFont"
+        },
+        {
+          "fontFamily": "Arial",
+          "slug": "arial",
+          "name": "Arial"
+        }
+      ],
+      "fontSizes": [
+        {
+          "size": "96px",
+          "slug": "size-96",
+          "name": "96px"
+        },
+        {
+          "size": "64px",
+          "slug": "size-64",
+          "name": "64px"
+        },
+        {
+          "size": "48px",
+          "slug": "size-48",
+          "name": "48px"
+        },
+        {
+          "size": "32px",
+          "slug": "size-32",
+          "name": "32px"
+        },
+        {
+          "size": "24px",
+          "slug": "size-24",
+          "name": "24px"
+        },
+        {
+          "size": "20px",
+          "slug": "size-20",
+          "name": "20px"
+        },
+        {
+          "size": "18px",
+          "slug": "size-18",
+          "name": "18px"
+        },
+        {
+          "size": "16px",
+          "slug": "size-16",
+          "name": "16px"
+        }
+      ]
+    },
+    "spacing": {
+      "spacingSizes": [
+        {
+          "size": "2px",
+          "slug": "spacing-2",
+          "name": "2px"
+        },
+        {
+          "size": "24px",
+          "slug": "spacing-24",
+          "name": "24px"
+        },
+        {
+          "size": "48px",
+          "slug": "spacing-48",
+          "name": "48px"
+        },
+        {
+          "size": "60px",
+          "slug": "spacing-60",
+          "name": "60px"
+        },
+        {
+          "size": "69px",
+          "slug": "spacing-69",
+          "name": "69px"
+        },
+        {
+          "size": "96px",
+          "slug": "spacing-96",
+          "name": "96px"
+        },
+        {
+          "size": "160px",
+          "slug": "spacing-160",
+          "name": "160px"
+        }
+      ]
+    },
+    "layout": {
+      "contentSize": "1440px",
+      "wideSize": "1400px"
+    }
+  },
+  "styles": {
+    "color": {
+      "background": "#141414",
+      "text": "#384047"
+    },
+    "typography": {
+      "fontSize": "14px",
+      "lineHeight": "normal",
+      "fontFamily": "Figtree"
+    },
+    "spacing": {}
+  }
+}

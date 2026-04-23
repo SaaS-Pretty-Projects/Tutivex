@@ -13,6 +13,22 @@
           "type": "string",
           "description": "User full name"
         },
+        "focusGoal": {
+          "type": "string",
+          "description": "Primary learning or focus objective"
+        },
+        "experienceLevel": {
+          "type": "string",
+          "description": "Current confidence level inside the curriculum"
+        },
+        "weeklyCommitment": {
+          "type": "string",
+          "description": "Expected weekly training cadence"
+        },
+        "preferredSession": {
+          "type": "string",
+          "description": "Preferred session format for deep work"
+        },
         "createdAt": {
           "type": "string",
           "description": "Server timestamp of creation"
@@ -28,10 +44,17 @@
         "courseId": { "type": "string" },
         "courseName": { "type": "string" },
         "progress": { "type": "number" },
+        "currentModuleId": { "type": "string" },
+        "completedModuleIds": { "type": "array" },
+        "status": { "type": "string" },
+        "difficulty": { "type": "string" },
+        "track": { "type": "string" },
+        "summary": { "type": "string" },
+        "durationMinutes": { "type": "number" },
         "lastAccessedAt": { "type": "string" },
         "enrolledAt": { "type": "string" }
       },
-      "required": ["courseId", "courseName", "progress", "lastAccessedAt", "enrolledAt"]
+      "required": ["courseId", "courseName", "progress", "currentModuleId", "completedModuleIds", "status", "difficulty", "track", "summary", "durationMinutes", "lastAccessedAt", "enrolledAt"]
     },
     "Subscription": {
       "title": "Subscription",

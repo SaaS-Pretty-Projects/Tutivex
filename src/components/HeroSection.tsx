@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Globe } from 'lucide-react';
-import { auth, db } from '../lib/firebase';
-import { GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import {useEffect, useRef, useState} from 'react';
+import {ArrowRight, Globe} from 'lucide-react';
+import {auth, db} from '../lib/firebase';
+import {GoogleAuthProvider, signInWithPopup, signOut} from 'firebase/auth';
+import {doc, getDoc, setDoc, serverTimestamp} from 'firebase/firestore';
+import {useNavigate} from 'react-router-dom';
+import {defaultMemberProfile} from '../lib/learningData';
 
 export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -25,7 +26,12 @@ export default function HeroSection() {
       if (!userSnap.exists()) {
         await setDoc(userRef, {
           email: result.user.email,
-          createdAt: serverTimestamp()
+          displayName: result.user.displayName || '',
+          focusGoal: defaultMemberProfile.focusGoal,
+          experienceLevel: defaultMemberProfile.experienceLevel,
+          weeklyCommitment: defaultMemberProfile.weeklyCommitment,
+          preferredSession: defaultMemberProfile.preferredSession,
+          createdAt: serverTimestamp(),
         });
       }
       navigate('/dashboard');
@@ -138,6 +144,7 @@ export default function HeroSection() {
             {user ? (
               <>
                 <span className="hidden md:block text-white text-sm opacity-60">Hi, {user.displayName || user.email?.split('@')[0]}</span>
+                <button onClick={() => navigate('/dashboard')} className="text-white text-sm font-medium hover:text-white/80 transition-colors">Dashboard</button>
                 <button onClick={handleLogout} className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium transition-all hover:bg-white/10">Log Out</button>
               </>
             ) : (
@@ -156,6 +163,26 @@ export default function HeroSection() {
           Master one subject.<br className="hidden md:block" />
           Deep, focused <em className="italic font-serif text-white/90">learning</em>.
         </h1>
+        <p className="max-w-3xl text-white/65 text-base md:text-lg leading-relaxed mb-8">
+          Tutivex now carries the learning experience beyond the landing page with a real internal workspace:
+          active roadmaps, progress-aware curriculum, and a profile that shapes how your sessions unfold.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => (user ? navigate('/dashboard') : handleLogin())}
+            className="bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center gap-2"
+          >
+            {user ? 'Open Dashboard' : 'Start Learning'}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+          <a
+            href="#courses"
+            className="liquid-glass rounded-full px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+          >
+            Explore Curriculum
+          </a>
+        </div>
       </main>
     </section>
   );

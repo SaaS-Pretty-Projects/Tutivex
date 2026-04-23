@@ -1,95 +1,176 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { auth, db, handleFirestoreError } from '../lib/firebase';
-import { collection, query, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { Globe, BookOpen, Clock, Activity, ArrowRight, Play, CheckCircle, Search, Plus, Loader2 } from 'lucide-react';
+import {useEffect, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
+import {collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc} from 'firebase/firestore';
+import {
+  Activity,
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  Clock3,
+  Loader2,
+  Play,
+  Search,
+  Sparkles,
+  Target,
+} from 'lucide-react';
+import {auth, db, handleFirestoreError} from '../lib/firebase';
+import {
+  calculateProgress,
+  courseCatalog,
+  defaultMemberProfile,
+  getCourseById,
+  getNextModuleId,
+  type MemberProfile,
+} from '../lib/learningData';
 
-interface Enrollment {
+interface EnrollmentRecord {
   id: string;
   courseId: string;
   courseName: string;
   progress: number;
-  enrolledAt?: any;
-  lastAccessedAt?: any;
+  currentModuleId?: string;
+  completedModuleIds?: string[];
+  status?: 'not_started' | 'in_progress' | 'completed';
+  difficulty?: string;
+  durationMinutes?: number;
+  track?: string;
+  summary?: string;
+  lastAccessedAt?: unknown;
+  enrolledAt?: unknown;
 }
 
-const MOCK_CATALOG = [
-  { id: '101', title: 'The Foundations of Focus', description: 'Master the art of deep work and eliminate distractions. Build a bulletproof cognitive routine.' },
-  { id: '102', title: 'Advanced Cognitive Patterns', description: 'Rewire your brain for sustained concentration over long periods to achieve peak output.' },
-  { id: '103', title: 'Flow State Architecture', description: 'Design your environment and physiological routine to trigger and maintain flow states on command.' },
-  { id: '001', title: 'Introduction to Mastery', description: 'The beginner guide to achieving top 1% performance through structured, dedicated learning.' }
-];
+function toDisplayDate(value: unknown) {
+  if (!value) {
+    return 'Just now';
+  }
+
+  if (typeof value === 'object' && value !== null && 'toDate' in value && typeof value.toDate === 'function') {
+    return value.toDate().toLocaleDateString();
+  }
+
+  if (value instanceof Date) {
+    return value.toLocaleDateString();
+  }
+
+  return 'Recently updated';
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(auth.currentUser);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const user = auth.currentUser;
+  const [profile, setProfile] = useState<MemberProfile>(defaultMemberProfile);
+  const [enrollments, setEnrollments] = useState<EnrollmentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
-      if (!u) {
-        navigate('/');
-      } else {
-        setUser(u);
-        fetchEnrollments(u.uid);
-      }
-    });
-    return unsubscribe;
-  }, [navigate]);
-
-  const fetchEnrollments = async (userId: string) => {
-    try {
-      const q = query(collection(db, `users/${userId}/enrollments`));
-      const querySnapshot = await getDocs(q);
-      const items: Enrollment[] = [];
-      querySnapshot.forEach((docSnap) => {
-        items.push({ id: docSnap.id, ...docSnap.data() } as Enrollment);
-      });
-      setEnrollments(items);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
+    if (!user) {
+      navigate('/');
+      return;
     }
-  };
 
-  const handleEnroll = async (courseId: string, courseName: string) => {
-    if (!user) return;
+    async function loadWorkspace() {
+      try {
+        const [profileSnapshot, enrollmentSnapshot] = await Promise.all([
+          getDoc(doc(db, 'users', user.uid)),
+          getDocs(query(collection(db, `users/${user.uid}/enrollments`))),
+        ]);
+
+        if (profileSnapshot.exists()) {
+          const data = profileSnapshot.data();
+          setProfile({
+            displayName: data.displayName || user.displayName || '',
+            focusGoal: data.focusGoal || defaultMemberProfile.focusGoal,
+            experienceLevel: data.experienceLevel || defaultMemberProfile.experienceLevel,
+            weeklyCommitment: data.weeklyCommitment || defaultMemberProfile.weeklyCommitment,
+            preferredSession: data.preferredSession || defaultMemberProfile.preferredSession,
+          });
+        } else {
+          setProfile({...defaultMemberProfile, displayName: user.displayName || ''});
+        }
+
+        const nextEnrollments = enrollmentSnapshot.docs.map((snapshot) => {
+          const data = snapshot.data();
+          return {
+            id: snapshot.id,
+            courseId: data.courseId,
+            courseName: data.courseName,
+            progress: data.progress ?? 0,
+            currentModuleId: data.currentModuleId,
+            completedModuleIds: data.completedModuleIds ?? [],
+            status: data.status ?? 'in_progress',
+            difficulty: data.difficulty,
+            durationMinutes: data.durationMinutes,
+            track: data.track,
+            summary: data.summary,
+            lastAccessedAt: data.lastAccessedAt,
+            enrolledAt: data.enrolledAt,
+          } as EnrollmentRecord;
+        });
+
+        setEnrollments(nextEnrollments);
+      } catch (error) {
+        console.error('Failed to load workspace', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadWorkspace();
+  }, [navigate, user]);
+
+  const handleEnroll = async (courseId: string) => {
+    if (!user) {
+      return;
+    }
+
+    const course = getCourseById(courseId);
+    if (!course) {
+      return;
+    }
+
     setEnrollingId(courseId);
 
-    // Optimistic update for instant UI feedback
-    const optimisticEnrollment: Enrollment = {
-      id: courseId,
-      courseId,
-      courseName,
+    const optimisticEnrollment: EnrollmentRecord = {
+      id: course.id,
+      courseId: course.id,
+      courseName: course.title,
       progress: 0,
-      enrolledAt: new Date(),
+      currentModuleId: course.modules[0]?.id ?? '',
+      completedModuleIds: [],
+      status: 'not_started',
+      difficulty: course.difficulty,
+      durationMinutes: course.durationMinutes,
+      track: course.track,
+      summary: course.summary,
       lastAccessedAt: new Date(),
+      enrolledAt: new Date(),
     };
-    setEnrollments(prev => [...prev, optimisticEnrollment]);
+
+    setEnrollments((current) => [...current, optimisticEnrollment]);
 
     try {
-      const newRef = doc(db, `users/${user.uid}/enrollments`, courseId);
-      await setDoc(newRef, {
-        courseId,
-        courseName,
+      await setDoc(doc(db, `users/${user.uid}/enrollments`, course.id), {
+        courseId: course.id,
+        courseName: course.title,
         progress: 0,
+        currentModuleId: course.modules[0]?.id ?? '',
+        completedModuleIds: [],
+        status: 'not_started',
+        difficulty: course.difficulty,
+        durationMinutes: course.durationMinutes,
+        track: course.track,
+        summary: course.summary,
         enrolledAt: serverTimestamp(),
-        lastAccessedAt: serverTimestamp()
+        lastAccessedAt: serverTimestamp(),
       });
-      // Fetch latest state passively to sync timestamps
-      fetchEnrollments(user.uid);
     } catch (error) {
-      console.error("Failed to enroll");
-      // Revert optimistic update on failure
-      setEnrollments(prev => prev.filter(e => e.courseId !== courseId));
+      setEnrollments((current) => current.filter((enrollment) => enrollment.courseId !== courseId));
       try {
-        handleFirestoreError(error, 'create', `users/${user.uid}/enrollments`);
-      } catch(e) {
-        console.error("Delegated:", e);
+        handleFirestoreError(error, 'create', `users/${user.uid}/enrollments/${course.id}`);
+      } catch (delegatedError) {
+        console.error('Enrollment write failed', delegatedError);
       }
     } finally {
       setEnrollingId(null);
@@ -97,210 +178,300 @@ export default function Dashboard() {
   };
 
   if (!user || loading) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+    return <div className="min-h-[50vh] flex items-center justify-center text-white/75">Loading your internal workspace...</div>;
   }
 
-  const lowerQuery = searchQuery.toLowerCase();
-  const enrolledIds = new Set(enrollments.map(e => e.courseId));
+  const queryText = searchQuery.toLowerCase();
+  const courseRows = courseCatalog.map((course) => ({
+    course,
+    enrollment: enrollments.find((entry) => entry.courseId === course.id) ?? null,
+  }));
 
-  const activeCourses = enrollments.filter(e => e.progress < 100 && e.courseName.toLowerCase().includes(lowerQuery));
-  const completedCourses = enrollments.filter(e => e.progress === 100 && e.courseName.toLowerCase().includes(lowerQuery));
-  const availableCatalog = MOCK_CATALOG.filter(c => 
-    !enrolledIds.has(c.id) && 
-    (c.title.toLowerCase().includes(lowerQuery) || c.description.toLowerCase().includes(lowerQuery))
-  );
+  const filteredCourseRows = courseRows.filter(({course, enrollment}) => {
+    const haystack = [course.title, course.description, course.track, enrollment?.courseName ?? ''].join(' ').toLowerCase();
+    return haystack.includes(queryText);
+  });
+
+  const activeRows = filteredCourseRows.filter(({enrollment}) => enrollment && enrollment.progress < 100);
+  const completedRows = filteredCourseRows.filter(({enrollment}) => enrollment && enrollment.progress >= 100);
+  const availableRows = filteredCourseRows.filter(({enrollment}) => !enrollment);
+
+  const nextFocusRow = activeRows[0] ?? filteredCourseRows.find(({enrollment}) => enrollment) ?? null;
+  const activeEnrollmentCount = enrollments.filter((enrollment) => enrollment.progress < 100).length;
+  const averageProgress =
+    enrollments.length > 0
+      ? Math.round(enrollments.reduce((sum, enrollment) => sum + enrollment.progress, 0) / enrollments.length)
+      : 0;
+  const totalMinutes = enrollments.reduce((sum, enrollment) => {
+    const fallbackCourse = getCourseById(enrollment.courseId);
+    return sum + (enrollment.durationMinutes || fallbackCourse?.durationMinutes || 0);
+  }, 0);
+
+  const firstName = profile.displayName || user.displayName || user.email?.split('@')[0] || 'Learner';
+  const focusHeadline = nextFocusRow
+    ? `Continue ${nextFocusRow.course.title} with a lighter switch cost.`
+    : 'Start a new learning track and build momentum this week.';
+  const nextModuleTitle =
+    nextFocusRow && nextFocusRow.enrollment
+      ? getCourseById(nextFocusRow.enrollment.courseId)?.modules.find(
+          (module) => module.id === (nextFocusRow.enrollment?.currentModuleId || getNextModuleId(nextFocusRow.course, nextFocusRow.enrollment?.completedModuleIds ?? [])),
+        )?.title
+      : null;
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-12 md:py-20 max-w-6xl mx-auto">
-      <nav className="flex items-center justify-between mb-16">
-        <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-          <Globe className="w-6 h-6 text-white" />
-          <span className="text-white font-semibold text-lg ml-2">Tutivex</span>
-        </div>
-        <div className="flex items-center gap-6">
-          <button 
-            onClick={() => navigate('/profile')}
-            className="text-white/60 text-sm hover:text-white transition-colors"
-          >
-            Profile Settings
-          </button>
-          <button 
-            onClick={() => auth.signOut()}
-            className="text-white/60 text-sm hover:text-white transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
-      </nav>
-
-      <header className="mb-16">
-        <h1 className="text-4xl md:text-6xl font-serif tracking-tight mb-4">
-          Welcome back, <em className="italic text-white/70">{user.displayName || user.email?.split('@')[0]}</em>.
-        </h1>
-        <p className="text-white/50 text-lg">Your focused learning environment.</p>
-      </header>
-
-      {/* Progress Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <div className="liquid-glass rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <BookOpen className="w-5 h-5 text-white/50" />
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50">Active Courses</h3>
-          </div>
-          <p className="text-4xl font-serif">{enrollments.filter(e => e.progress < 100).length}</p>
-        </div>
-        <div className="liquid-glass rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Activity className="w-5 h-5 text-white/50" />
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50">Average Progress</h3>
-          </div>
-          <p className="text-4xl font-serif">
-            {enrollments.length > 0 ? Math.round(enrollments.reduce((acc, curr) => acc + curr.progress, 0) / enrollments.length) : 0}%
-          </p>
-        </div>
-        <div className="liquid-glass rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <CheckCircle className="w-5 h-5 text-white/50" />
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-white/50">Completed</h3>
-          </div>
-          <p className="text-4xl font-serif">{enrollments.filter(e => e.progress === 100).length}</p>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="w-full relative max-w-xl mb-12">
-        <Search className="w-5 h-5 absolute left-6 top-1/2 -translate-y-1/2 text-white/40" />
-        <input 
-          type="text"
-          placeholder="Search courses and catalog..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full liquid-glass rounded-full py-4 pl-14 pr-6 text-white placeholder:text-white/40 outline-none focus:bg-white/10 transition-colors border border-white/5"
-        />
-      </div>
-
-      <div className="mb-8 flex items-baseline justify-between">
-        <h2 className="text-2xl md:text-3xl font-serif tracking-tight">Active Curriculum</h2>
-      </div>
-
-      {activeCourses.length === 0 ? (
-        <div className="border border-white/10 rounded-2xl p-12 text-center flex flex-col items-center mb-16 liquid-glass">
-          <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-6">
-            <BookOpen className="w-6 h-6 text-white/40" />
-          </div>
-          <h3 className="text-xl font-medium mb-3">No active courses</h3>
-          <p className="text-white/50 text-sm max-w-md">
-            {searchQuery ? "No enrolled courses match your search." : "You haven't enrolled in any focused paths yet. Browse the catalog below to begin your journey."}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-          {activeCourses.map((enr) => (
-            <div key={enr.id} className="liquid-glass rounded-2xl p-6 flex flex-col hover:bg-white/5 transition-colors border border-white/5">
-              <div className="mb-8">
-                <span className="text-xs font-semibold tracking-widest uppercase text-white/40 block mb-2">COURSE</span>
-                <h3 className="text-2xl font-serif tracking-tight">{enr.courseName}</h3>
-              </div>
-              
-              <div className="mt-auto mb-6">
-                <div className="flex justify-between text-xs text-white/60 mb-2">
-                  <span>Progress</span>
-                  <span>{enr.progress}%</span>
-                </div>
-                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-white transition-all duration-1000 ease-out"
-                    style={{ width: `${enr.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              <button 
-                 onClick={() => navigate(`/courses/${enr.courseId}`)}
-                 className="w-full py-3 bg-white text-black text-sm font-medium rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
-              >
-                <Play className="w-4 h-4 text-black" /> Continue Learning
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Course Catalog */}
-      <div className="mb-8 flex items-baseline justify-between mt-8">
-        <h2 className="text-2xl md:text-3xl font-serif tracking-tight text-white">Course Catalog</h2>
-      </div>
-
-      {availableCatalog.length === 0 ? (
-        <div className="p-8 text-center text-white/50 border border-white/5 rounded-2xl liquid-glass mb-16">
-          {searchQuery ? "No catalog courses match your search." : "You have enrolled in all available courses."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-          {availableCatalog.map(course => (
-            <div key={course.id} className="liquid-glass rounded-2xl p-6 flex flex-col hover:bg-white/[0.04] transition-colors border border-white/5">
-              <div className="mb-4">
-                <span className="text-[10px] font-semibold tracking-widest uppercase text-green-400 block mb-2">Available</span>
-                <h3 className="text-xl font-medium tracking-tight mb-2">{course.title}</h3>
-                <p className="text-sm text-white/60 leading-relaxed">{course.description}</p>
-              </div>
-              <div className="mt-auto pt-6">
-                <button 
-                  onClick={() => handleEnroll(course.id, course.title)}
-                  disabled={enrollingId === course.id}
-                  className="w-full py-3 bg-transparent border border-white/20 text-white text-sm font-medium rounded-xl hover:bg-white hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-white cursor-pointer"
+    <div className="space-y-8 md:space-y-10">
+      <section className="grid grid-cols-1 xl:grid-cols-[1.5fr,1fr] gap-6">
+        <div className="liquid-glass rounded-[2rem] p-7 md:p-9 border border-white/10 overflow-hidden relative">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.12),_transparent_40%)] pointer-events-none" />
+          <div className="relative">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-white/40 mb-4">Focus Blueprint</p>
+            <h2 className="text-3xl md:text-5xl font-serif tracking-tight mb-4">
+              {firstName}, {focusHeadline}
+            </h2>
+            <p className="max-w-2xl text-white/60 leading-relaxed mb-8">
+              Your current goal is <span className="text-white">{profile.focusGoal}</span>. Keep the system simple:
+              {` `}{profile.weeklyCommitment.toLowerCase()} anchored around {profile.preferredSession.toLowerCase()}.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {nextFocusRow ? (
+                <Link
+                  to={`/courses/${nextFocusRow.course.id}`}
+                  className="bg-white text-black rounded-full px-5 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center gap-2"
                 >
-                  {enrollingId === course.id ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Enrolling...</>
-                  ) : (
-                    <><Plus className="w-4 h-4" /> Enroll Now</>
-                  )}
+                  <Play className="w-4 h-4" />
+                  Continue {nextFocusRow.course.title}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => availableRows[0] && handleEnroll(availableRows[0].course.id)}
+                  className="bg-white text-black rounded-full px-5 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Start your first track
                 </button>
-              </div>
+              )}
+              <Link
+                to="/profile"
+                className="rounded-full px-5 py-3 text-sm font-medium border border-white/15 text-white/75 hover:text-white hover:border-white/30 transition-colors"
+              >
+                Refine learning profile
+              </Link>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Learning History */}
-      {completedCourses.length > 0 && (
-        <>
-          <div className="mb-8 flex items-baseline justify-between mt-8">
-            <h2 className="text-2xl md:text-3xl font-serif tracking-tight text-white/60">Learning History</h2>
+            {nextModuleTitle ? (
+              <p className="mt-6 text-sm text-white/45">Next recommended module: {nextModuleTitle}</p>
+            ) : null}
           </div>
-          <div className="flex flex-col gap-4">
-            {completedCourses.map((enr) => {
-              const catalogInfo = MOCK_CATALOG.find(c => c.id === enr.courseId);
-              const summary = catalogInfo?.description || "Curriculum mastered and completed. You have full access to review all materials.";
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-4">
+          <div className="liquid-glass rounded-3xl p-6 border border-white/8">
+            <div className="flex items-center gap-3 text-white/50 mb-4">
+              <BookOpen className="w-5 h-5" />
+              <span className="text-xs uppercase tracking-[0.24em]">Active Tracks</span>
+            </div>
+            <p className="text-4xl font-serif">{activeEnrollmentCount}</p>
+            <p className="text-sm text-white/45 mt-2">Courses currently in motion</p>
+          </div>
+          <div className="liquid-glass rounded-3xl p-6 border border-white/8">
+            <div className="flex items-center gap-3 text-white/50 mb-4">
+              <Activity className="w-5 h-5" />
+              <span className="text-xs uppercase tracking-[0.24em]">Average Progress</span>
+            </div>
+            <p className="text-4xl font-serif">{averageProgress}%</p>
+            <p className="text-sm text-white/45 mt-2">Across your enrolled curriculum</p>
+          </div>
+          <div className="liquid-glass rounded-3xl p-6 border border-white/8">
+            <div className="flex items-center gap-3 text-white/50 mb-4">
+              <Clock3 className="w-5 h-5" />
+              <span className="text-xs uppercase tracking-[0.24em]">Guided Minutes</span>
+            </div>
+            <p className="text-4xl font-serif">{totalMinutes}</p>
+            <p className="text-sm text-white/45 mt-2">Minutes inside your enrolled tracks</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-[1.15fr,0.85fr] gap-6">
+        <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.28em] text-white/40 mb-2">Roadmap</p>
+              <h3 className="text-2xl md:text-3xl font-serif">Your internal learning map</h3>
+            </div>
+            <div className="w-full md:w-72 relative">
+              <Search className="w-4 h-4 absolute left-5 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search tracks, modules, and topics"
+                className="w-full rounded-full bg-white/5 border border-white/10 py-3 pl-12 pr-4 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/25"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {filteredCourseRows.map(({course, enrollment}) => {
+              const completedCount = enrollment?.completedModuleIds?.length ?? Math.round(((enrollment?.progress ?? 0) / 100) * course.modules.length);
+              const statusLabel = enrollment
+                ? enrollment.progress >= 100
+                  ? 'Mastered'
+                  : enrollment.status === 'not_started'
+                    ? 'Queued'
+                    : 'In Progress'
+                : 'Available';
 
               return (
-                <div key={enr.id} className="flex flex-col sm:flex-row sm:items-start justify-between p-6 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors group">
-                  <div className="mb-6 sm:mb-0 max-w-2xl pr-0 sm:pr-8">
-                    <div className="flex items-center gap-3 mb-3">
-                      <CheckCircle className="w-5 h-5 text-green-400 opacity-80" />
-                      <h4 className="text-xl font-medium text-white/90">{enr.courseName}</h4>
+                <div key={course.id} className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5 md:p-6">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
+                    <div className="max-w-2xl">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-white/45">{course.track}</span>
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-white/25">•</span>
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-white/45">{course.difficulty}</span>
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-white/25">•</span>
+                        <span className="text-[10px] uppercase tracking-[0.24em] text-white/45">{statusLabel}</span>
+                      </div>
+                      <h4 className="text-xl font-medium tracking-tight mb-2">{course.title}</h4>
+                      <p className="text-white/60 leading-relaxed mb-4">{course.summary}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-3">
+                          <p className="text-white/40 text-xs uppercase tracking-[0.18em] mb-1">Modules</p>
+                          <p>{completedCount}/{course.modules.length} completed</p>
+                        </div>
+                        <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-3">
+                          <p className="text-white/40 text-xs uppercase tracking-[0.18em] mb-1">Guided Time</p>
+                          <p>{course.durationMinutes} minutes</p>
+                        </div>
+                        <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-3">
+                          <p className="text-white/40 text-xs uppercase tracking-[0.18em] mb-1">Weekly Outcome</p>
+                          <p>{course.weeklyOutcome}</p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-white/50 leading-relaxed mb-4">
-                      {summary}
-                    </p>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest font-semibold">
-                      Completed • {enr.lastAccessedAt?.toDate?.()?.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) || 'Recently'}
-                    </p>
-                  </div>
-                  <div className="sm:text-right flex flex-col sm:items-end w-full sm:w-auto mt-2 sm:mt-0">
-                    <button 
-                      onClick={() => navigate(`/courses/${enr.courseId}`)}
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white/5 group-hover:bg-white/10 text-white text-sm font-medium rounded-xl transition-all duration-300 border border-white/5 hover:border-white/20 w-full sm:w-auto whitespace-nowrap"
-                    >
-                      View Details <ArrowRight className="w-4 h-4 text-white/50 group-hover:text-white transition-colors" />
-                    </button>
+
+                    <div className="w-full md:w-56 shrink-0">
+                      {enrollment ? (
+                        <>
+                          <div className="flex justify-between text-xs text-white/45 mb-2">
+                            <span>Progress</span>
+                            <span>{enrollment.progress}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-white/8 overflow-hidden mb-4">
+                            <div className="h-full bg-white rounded-full transition-all duration-500" style={{width: `${enrollment.progress}%`}} />
+                          </div>
+                          <Link
+                            to={`/courses/${course.id}`}
+                            className="w-full bg-white text-black rounded-2xl px-4 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center justify-center gap-2"
+                          >
+                            <Play className="w-4 h-4" />
+                            {enrollment.progress >= 100 ? 'Review course' : 'Continue'}
+                          </Link>
+                          <p className="text-xs text-white/35 mt-3">Last touched {toDisplayDate(enrollment.lastAccessedAt)}</p>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEnroll(course.id)}
+                            disabled={enrollingId === course.id}
+                            className="w-full rounded-2xl px-4 py-3 text-sm font-medium border border-white/15 text-white hover:bg-white hover:text-black transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-white inline-flex items-center justify-center gap-2"
+                          >
+                            {enrollingId === course.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                            {enrollingId === course.id ? 'Starting track...' : 'Enroll now'}
+                          </button>
+                          <p className="text-xs text-white/35 mt-3">{course.description}</p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
             })}
           </div>
-        </>
-      )}
+        </div>
+
+        <div className="space-y-6">
+          <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-white/40 mb-3">Personalization</p>
+            <h3 className="text-2xl font-serif mb-5">Your current operating settings</h3>
+            <div className="space-y-3">
+              <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-1">Primary Goal</p>
+                <p>{profile.focusGoal}</p>
+              </div>
+              <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-1">Experience Level</p>
+                <p>{profile.experienceLevel}</p>
+              </div>
+              <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-1">Commitment + Session Style</p>
+                <p>{profile.weeklyCommitment}</p>
+                <p className="text-sm text-white/45 mt-1">{profile.preferredSession}</p>
+              </div>
+            </div>
+            <Link
+              to="/profile"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              Refine these settings
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-white/40 mb-3">Execution Notes</p>
+            <h3 className="text-2xl font-serif mb-5">How to use the internal app this week</h3>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <Target className="w-5 h-5 mt-1 text-white/60 shrink-0" />
+                <p className="text-white/65 leading-relaxed">
+                  Keep one course as your primary track and use the others as supporting systems, not parallel distractions.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Clock3 className="w-5 h-5 mt-1 text-white/60 shrink-0" />
+                <p className="text-white/65 leading-relaxed">
+                  Use {profile.preferredSession.toLowerCase()} and leave a written re-entry note after each module to reduce restart friction.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <CheckCircle2 className="w-5 h-5 mt-1 text-white/60 shrink-0" />
+                <p className="text-white/65 leading-relaxed">
+                  Treat module completion as an execution checkpoint. The course view now keeps current module, completed modules, and status in sync.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {completedRows.length > 0 ? (
+            <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-white/40 mb-3">Completed</p>
+              <h3 className="text-2xl font-serif mb-5">Mastered tracks</h3>
+              <div className="space-y-3">
+                {completedRows.map(({course, enrollment}) => (
+                  <Link
+                    key={course.id}
+                    to={`/courses/${course.id}`}
+                    className="block rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4 hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-medium">{course.title}</p>
+                        <p className="text-sm text-white/45">{course.track}</p>
+                      </div>
+                      <span className="text-xs uppercase tracking-[0.2em] text-green-400">
+                        {enrollment?.progress ?? calculateProgress(course.modules.length, course.modules.map((module) => module.id))}% mastered
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
     </div>
   );
 }

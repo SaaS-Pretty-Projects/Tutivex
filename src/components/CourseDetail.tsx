@@ -1,397 +1,440 @@
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlayCircle, CheckCircle, BookOpen, Loader2, Trophy } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { auth, db, handleFirestoreError } from '../lib/firebase';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {useEffect, useState} from 'react';
+import {Link, useNavigate, useParams} from 'react-router-dom';
+import {doc, getDoc, serverTimestamp, updateDoc} from 'firebase/firestore';
+import {
+  ArrowLeft,
+  BookOpen,
+  CheckCircle2,
+  Clock3,
+  Loader2,
+  PlayCircle,
+  Sparkles,
+  Target,
+} from 'lucide-react';
+import {AnimatePresence, motion} from 'motion/react';
+import {auth, db, handleFirestoreError} from '../lib/firebase';
+import {
+  calculateProgress,
+  getCourseById,
+  getCurrentModuleIndex,
+  getNextModuleId,
+} from '../lib/learningData';
 
-interface Enrollment {
+interface EnrollmentRecord {
   courseId: string;
   courseName: string;
   progress: number;
+  currentModuleId?: string;
+  completedModuleIds?: string[];
+  status?: 'not_started' | 'in_progress' | 'completed';
 }
 
-const MOCK_MODULES = [
-  { id: 'm1', title: 'Module 1: The Foundation', description: 'Establish the core tenets of deep work, set up a distraction-free environment, and build the initial habits required for extended focus.', videoUrl: 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4' },
-  { id: 'm2', title: 'Module 2: Core Concepts', description: 'Dive into the neuroscience of attention, understand cognitive loops, and learn how to identify and dismantle internal triggers for distraction.', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4' },
-  { id: 'm3', title: 'Module 3: Advanced Flow', description: 'Learn the precise triggers to enter a flow state on command, and develop stamina to maintain it for multi-hour sessions.', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-  { id: 'm4', title: 'Module 4: Total Mastery', description: 'Synthesize all past modules into a sustainable, lifelong system for continuous high-level cognitive output.', videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4' },
-];
-
 export default function CourseDetail() {
-  const { courseId } = useParams();
+  const {courseId} = useParams();
   const navigate = useNavigate();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
-  const [user, setUser] = useState(auth.currentUser);
-  const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
+  const user = auth.currentUser;
+  const course = getCourseById(courseId);
+
+  const [enrollment, setEnrollment] = useState<EnrollmentRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [updating, setUpdating] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [showToast]);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
-      if (!u) {
-        navigate('/');
-      } else {
-        setUser(u);
-        fetchEnrollment(u.uid);
-      }
-    });
-    return unsubscribe;
-  }, [navigate, courseId]);
-
-  const fetchEnrollment = async (userId: string) => {
-    if (!courseId) return;
-    try {
-      const docRef = doc(db, `users/${userId}/enrollments`, courseId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as Enrollment;
-        setEnrollment(data);
-        
-        // Calculate the highest uncompleted module based on progress
-        const completedCount = Math.round((data.progress / 100) * MOCK_MODULES.length);
-        const nextModule = Math.min(completedCount, MOCK_MODULES.length - 1);
-        setActiveModuleIndex(nextModule);
-      } else {
-        navigate('/dashboard'); // Course not found
-      }
-    } catch (error) {
-      console.error("Failed to fetch enrollment", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStartModule = async (index: number) => {
-    if (index === activeModuleIndex) return;
-
-    // Smoothly fade out the current video
-    if (videoRef.current) {
-      videoRef.current.style.opacity = '0';
+    if (!user) {
+      navigate('/');
+      return;
     }
 
-    // Wait for the fade out transition
-    setTimeout(async () => {
-      setActiveModuleIndex(index);
-      
-      // Let React re-render with the new source, then fade back in
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.load();
-          videoRef.current.play().catch(console.error);
-          videoRef.current.style.opacity = '1';
+    if (!course) {
+      navigate('/dashboard');
+      return;
+    }
+
+    async function loadEnrollment() {
+      try {
+        const snapshot = await getDoc(doc(db, `users/${user.uid}/enrollments`, course.id));
+
+        if (!snapshot.exists()) {
+          navigate('/dashboard');
+          return;
         }
-      }, 50);
 
-      // Update progress indicator accordingly if they start a module further ahead
-      if (user && courseId && enrollment) {
-        const completedCount = Math.round((enrollment.progress / 100) * MOCK_MODULES.length);
-        if (index > completedCount) {
-          const newProgress = Math.round((index / MOCK_MODULES.length) * 100);
-          try {
-            const docRef = doc(db, `users/${user.uid}/enrollments`, courseId);
-            await updateDoc(docRef, {
-              progress: newProgress,
-              lastAccessedAt: serverTimestamp()
-            });
-            setEnrollment({ ...enrollment, progress: newProgress });
-          } catch (error) {
-            console.error("Failed to sync progress jump", error);
-          }
-        }
+        const data = snapshot.data();
+        const completedModuleIds = data.completedModuleIds ?? [];
+        const currentModuleId = data.currentModuleId || getNextModuleId(course, completedModuleIds);
+        const progress = data.progress ?? calculateProgress(course.modules.length, completedModuleIds);
+        const nextEnrollment: EnrollmentRecord = {
+          courseId: data.courseId,
+          courseName: data.courseName,
+          progress,
+          currentModuleId,
+          completedModuleIds,
+          status: data.status ?? (progress >= 100 ? 'completed' : completedModuleIds.length > 0 ? 'in_progress' : 'not_started'),
+        };
+
+        setEnrollment(nextEnrollment);
+        setActiveModuleIndex(getCurrentModuleIndex(course, currentModuleId, completedModuleIds));
+      } catch (error) {
+        console.error('Failed to load enrollment', error);
+      } finally {
+        setLoading(false);
       }
-    }, 300);
-  };
+    }
 
-  const handleCompleteModule = async () => {
-    if (!user || !courseId || !enrollment || updating) return;
-    setUpdating(true);
-    
+    loadEnrollment();
+  }, [course, navigate, user]);
+
+  if (!course || !user || loading || !enrollment) {
+    return <div className="min-h-[50vh] flex items-center justify-center text-white/70">Loading course workspace...</div>;
+  }
+
+  const completedModuleIds = enrollment.completedModuleIds ?? [];
+  const currentModule = course.modules[activeModuleIndex];
+  const progress = enrollment.progress;
+  const nextModuleId = getNextModuleId(course, completedModuleIds);
+  const allComplete = progress >= 100;
+
+  const startModule = async (moduleIndex: number) => {
+    const module = course.modules[moduleIndex];
+    const previousModule = course.modules[moduleIndex - 1];
+    const isUnlocked = moduleIndex === 0 || completedModuleIds.includes(previousModule.id) || completedModuleIds.includes(module.id);
+
+    if (!isUnlocked || updating) {
+      return;
+    }
+
+    setActiveModuleIndex(moduleIndex);
+
+    if (module.id === enrollment.currentModuleId && enrollment.status !== 'not_started') {
+      return;
+    }
+
+    const nextStatus = completedModuleIds.length > 0 || moduleIndex > 0 ? 'in_progress' : 'not_started';
+
     try {
-      // Calculate current completed modules based on existing progress
-      let completedCount = Math.round((enrollment.progress / 100) * MOCK_MODULES.length);
-      
-      // If they are completing a module that extends their highest progress
-      if (activeModuleIndex >= completedCount) {
-        completedCount = activeModuleIndex + 1;
-      }
-
-      // Cap at total modules
-      if (completedCount > MOCK_MODULES.length) {
-        completedCount = MOCK_MODULES.length;
-      }
-
-      const newProgress = Math.round((completedCount / MOCK_MODULES.length) * 100);
-      
-      const docRef = doc(db, `users/${user.uid}/enrollments`, courseId);
-      await updateDoc(docRef, {
-        progress: newProgress,
-        lastAccessedAt: serverTimestamp()
+      setUpdating(true);
+      await updateDoc(doc(db, `users/${user.uid}/enrollments`, course.id), {
+        currentModuleId: module.id,
+        status: nextStatus,
+        lastAccessedAt: serverTimestamp(),
       });
 
-      setEnrollment({ ...enrollment, progress: newProgress });
-      
-      // Trigger celebration if mastered, otherwise auto-advance
-      if (newProgress === 100 && enrollment.progress < 100) {
-        setShowCelebration(true);
-        setShowToast(true);
-      } else if (activeModuleIndex < MOCK_MODULES.length - 1) {
-        handleStartModule(activeModuleIndex + 1);
-      }
-
+      setEnrollment((current) =>
+        current
+          ? {
+              ...current,
+              currentModuleId: module.id,
+              status: nextStatus,
+            }
+          : current,
+      );
     } catch (error) {
-      console.error(error);
+      console.error('Failed to set current module', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const completeModule = async () => {
+    if (updating) {
+      return;
+    }
+
+    const activeModule = course.modules[activeModuleIndex];
+    const nextCompletedModuleIds = Array.from(new Set([...completedModuleIds, activeModule.id]));
+    const nextProgress = calculateProgress(course.modules.length, nextCompletedModuleIds);
+    const nextCurrentModuleId = getNextModuleId(course, nextCompletedModuleIds);
+    const nextStatus = nextProgress >= 100 ? 'completed' : 'in_progress';
+
+    try {
+      setUpdating(true);
+      await updateDoc(doc(db, `users/${user.uid}/enrollments`, course.id), {
+        progress: nextProgress,
+        currentModuleId: nextCurrentModuleId,
+        completedModuleIds: nextCompletedModuleIds,
+        status: nextStatus,
+        lastAccessedAt: serverTimestamp(),
+      });
+
+      setEnrollment({
+        ...enrollment,
+        progress: nextProgress,
+        currentModuleId: nextCurrentModuleId,
+        completedModuleIds: nextCompletedModuleIds,
+        status: nextStatus,
+      });
+
+      if (nextProgress >= 100 && progress < 100) {
+        setShowCelebration(true);
+      } else {
+        setActiveModuleIndex(getCurrentModuleIndex(course, nextCurrentModuleId, nextCompletedModuleIds));
+      }
+    } catch (error) {
       try {
-        handleFirestoreError(error, 'update', `users/${user.uid}/enrollments/${courseId}`);
-      } catch (err) {
-        console.error(err);
+        handleFirestoreError(error, 'update', `users/${user.uid}/enrollments/${course.id}`);
+      } catch (delegatedError) {
+        console.error('Failed to complete module', delegatedError);
       }
     } finally {
       setUpdating(false);
     }
   };
 
-  if (loading || !enrollment) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
-  }
-
-  const isCourseComplete = enrollment.progress === 100;
-  const activeModule = MOCK_MODULES[activeModuleIndex];
-  const completedCount = Math.round((enrollment.progress / 100) * MOCK_MODULES.length);
-
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-12 md:py-20 max-w-5xl mx-auto">
-      <button 
-        onClick={() => navigate('/dashboard')} 
-        className="mb-12 flex items-center gap-2 text-white/50 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-      </button>
-      
-      <div className="mb-10">
-        <div className="flex items-center gap-4 text-xs font-semibold tracking-widest uppercase mb-4">
-          <span className="text-white/40">Tutivex Core</span>
-          <span className="text-white/40">•</span>
-          {isCourseComplete ? (
-            <span className="text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Mastered</span>
-          ) : (
-            <span className="text-white/80">In Progress</span>
-          )}
-        </div>
-        <h1 className="text-4xl md:text-5xl font-serif tracking-tight mb-4">
-          {enrollment.courseName}
-        </h1>
-        <p className="text-white/60 text-lg max-w-3xl leading-relaxed mb-6">
-          This comprehensive program is designed to take you from a distracted, scattered workflow into a state of relentless, deliberate focus. Our curriculum is tailored for high-achievers looking to reclaim their cognitive bandwidth and produce rare, valuable work in a distracted world.
-        </p>
-      </div>
-
-      {/* Main Video Player */}
-      <div className="aspect-video w-full rounded-3xl overflow-hidden liquid-glass relative mb-4 flex items-center justify-center border border-white/5 bg-black/50">
-        <video 
-          ref={videoRef}
-          controls
-          onEnded={handleCompleteModule}
-          className="w-full h-full object-contain bg-black transition-opacity duration-300 ease-in-out"
-          src={activeModule.videoUrl}
-          poster={`https://picsum.photos/seed/${courseId}/1920/1080?blur=4`}
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        <button
+          type="button"
+          onClick={() => navigate('/dashboard')}
+          className="inline-flex items-center gap-2 text-white/55 hover:text-white transition-colors"
         >
-          Your browser does not support the video tag.
-        </video>
-        
-        <div className="absolute top-6 left-6 bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] tracking-widest uppercase border border-white/10 text-white font-medium z-10 transition-opacity duration-300">
-          Now Playing: {activeModule.title}
-        </div>
-      </div>
-      
-      {/* Preload Next Video for seamless transitions */}
-      {activeModuleIndex < MOCK_MODULES.length - 1 && (
-        <link rel="prefetch" as="video" href={MOCK_MODULES[activeModuleIndex + 1].videoUrl} />
-      )}
-
-      <div className="flex justify-between items-center mb-12 px-2">
-        <button 
-          onClick={() => handleStartModule(activeModuleIndex - 1)}
-          disabled={activeModuleIndex === 0}
-          className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors disabled:opacity-30 disabled:hover:text-white/60"
-        >
-          <ArrowLeft className="w-4 h-4" /> Previous Module
+          <ArrowLeft className="w-4 h-4" />
+          Back to dashboard
         </button>
-        <button 
-          onClick={() => handleStartModule(activeModuleIndex + 1)}
-          disabled={activeModuleIndex === MOCK_MODULES.length - 1}
-          className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors disabled:opacity-30 disabled:hover:text-white/60"
-        >
-          Next Module <ArrowLeft className="w-4 h-4 rotate-180" />
-        </button>
+        <span className="text-white/20">/</span>
+        <span className="text-white/45">{course.track}</span>
       </div>
 
-      {/* Progress & Actions Section */}
-      <div className="liquid-glass rounded-2xl p-8 mb-12 flex flex-col md:flex-row justify-between items-center gap-8 border border-white/5">
-        <div className="w-full md:w-1/3">
-          <h3 className="text-xl font-medium mb-1">Your Progress</h3>
-          <p className="text-white/50 text-sm">
-            {isCourseComplete 
-              ? "All modules completed." 
-              : `You are on Module ${Math.min(completedCount + 1, MOCK_MODULES.length)} of ${MOCK_MODULES.length}.`}
-          </p>
-        </div>
-        
-        <div className="w-full md:w-1/3">
-          <div className="flex justify-between text-xs text-white/60 mb-3">
-            <span className="uppercase tracking-widest text-[10px]">Mastery Track</span>
-            <span className="font-serif text-lg">{enrollment.progress}%</span>
-          </div>
-          <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden inset-shadow-sm border border-white/5">
-            <div 
-              className="h-full bg-gradient-to-r from-white/60 to-white rounded-full transition-all duration-1000 ease-out" 
-              style={{ width: `${enrollment.progress}%` }} 
-            />
-          </div>
-        </div>
+      <section className="grid grid-cols-1 xl:grid-cols-[1.15fr,0.85fr] gap-6">
+        <div className="liquid-glass rounded-[2rem] p-7 md:p-9 border border-white/10 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.1),_transparent_45%)] pointer-events-none" />
+          <div className="relative">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="text-[11px] uppercase tracking-[0.24em] text-white/45">{course.track}</span>
+              <span className="text-[11px] uppercase tracking-[0.24em] text-white/25">•</span>
+              <span className="text-[11px] uppercase tracking-[0.24em] text-white/45">{course.difficulty}</span>
+              <span className="text-[11px] uppercase tracking-[0.24em] text-white/25">•</span>
+              <span className="text-[11px] uppercase tracking-[0.24em] text-white/45">
+                {allComplete ? 'Mastered' : enrollment.status === 'not_started' ? 'Queued' : 'In progress'}
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-serif tracking-tight mb-4">{course.title}</h2>
+            <p className="max-w-3xl text-white/62 text-base md:text-lg leading-relaxed mb-8">{course.description}</p>
 
-        <div className="w-full md:w-auto flex justify-end">
-           <button
-             onClick={handleCompleteModule}
-             disabled={updating || isCourseComplete && activeModuleIndex === MOCK_MODULES.length - 1}
-             className="w-full md:w-auto liquid-glass rounded-xl px-6 py-3 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 border border-white/10 text-white"
-           >
-             {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-             {isCourseComplete && activeModuleIndex === MOCK_MODULES.length - 1 ? "Course Finished" : "Mark Module Complete"}
-           </button>
-        </div>
-      </div>
-
-      {/* Course Curriculum / Module List */}
-      <div>
-        <h3 className="text-2xl font-serif tracking-tight mb-6">Curriculum</h3>
-        <div className="flex flex-col gap-3">
-          {MOCK_MODULES.map((mod, index) => {
-            const isCompleted = index < completedCount;
-            const isActive = index === activeModuleIndex;
-
-            return (
-              <div 
-                key={mod.id} 
-                className={`flex items-center justify-between p-5 rounded-2xl border transition-colors ${
-                  isActive ? 'bg-white/10 border-white/20' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04]'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${
-                    isCompleted ? 'bg-green-400/10 border-green-400/30 text-green-400' : 
-                    isActive ? 'bg-white/10 border-white/30 text-white' : 'bg-white/5 border-white/10 text-white/30'
-                  }`}>
-                    {isCompleted ? <CheckCircle className="w-5 h-5" /> : <BookOpen className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <h4 className={`font-medium ${isActive ? 'text-white' : 'text-white/80'}`}>{mod.title}</h4>
-                    <p className="text-sm text-white/60 mt-1 max-w-xl">{mod.description}</p>
-                    <p className="text-xs text-white/40 mt-2 font-medium tracking-wide uppercase">{isCompleted ? 'Completed' : isActive ? 'Currently Playing' : 'Locked / Next up'}</p>
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => handleStartModule(index)}
-                  className={`px-5 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-colors ${
-                    isActive ? 'bg-white text-black' : 'bg-white/5 hover:bg-white/10 text-white'
-                  }`}
-                >
-                  <PlayCircle className="w-4 h-4" />
-                  {isActive ? 'Playing' : 'Start Module'}
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-3xl bg-white/[0.03] border border-white/8 px-5 py-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-2">Progress</p>
+                <p className="text-3xl font-serif">{progress}%</p>
               </div>
-            );
-          })}
+              <div className="rounded-3xl bg-white/[0.03] border border-white/8 px-5 py-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-2">Module Count</p>
+                <p className="text-3xl font-serif">{completedModuleIds.length}/{course.modules.length}</p>
+              </div>
+              <div className="rounded-3xl bg-white/[0.03] border border-white/8 px-5 py-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-2">Guided Minutes</p>
+                <p className="text-3xl font-serif">{course.durationMinutes}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Celebratory Mastery Modal */}
+        <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+          <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-3">Session plan</p>
+          <h3 className="text-2xl font-serif mb-5">{currentModule.title}</h3>
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Ritual</p>
+              <p className="text-white/75">{currentModule.ritual}</p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Target outcome</p>
+              <p className="text-white/75">{course.weeklyOutcome}</p>
+            </div>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Current module duration</p>
+              <p className="text-white/75">{currentModule.durationMinutes} minutes</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 xl:grid-cols-[1.2fr,0.8fr] gap-6">
+        <div className="liquid-glass rounded-[2rem] p-6 md:p-7 border border-white/8">
+          <div className="aspect-video w-full rounded-[1.5rem] overflow-hidden border border-white/8 bg-black/60 mb-6">
+            <video
+              key={currentModule.id}
+              controls
+              autoPlay
+              className="w-full h-full object-cover"
+              src={currentModule.videoUrl}
+              poster={`https://picsum.photos/seed/${course.id}-${currentModule.id}/1600/900?blur=3`}
+            >
+              Your browser does not support the video tag.
+            </video>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-2">Now playing</p>
+              <h3 className="text-2xl font-serif">{currentModule.title}</h3>
+              <p className="text-white/55 mt-2 max-w-2xl">{currentModule.description}</p>
+            </div>
+            <button
+              type="button"
+              onClick={completeModule}
+              disabled={updating || allComplete}
+              className="rounded-2xl bg-white text-black px-5 py-3 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-55 inline-flex items-center justify-center gap-2"
+            >
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {allComplete ? 'Course complete' : 'Mark module complete'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-[1.5rem] bg-white/[0.03] border border-white/6 p-5">
+              <div className="flex items-center gap-2 mb-4 text-white/60">
+                <Target className="w-4 h-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">What this module should change</p>
+              </div>
+              <ul className="space-y-3 text-white/75">
+                {currentModule.outcomes.map((outcome) => (
+                  <li key={outcome} className="flex gap-3">
+                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
+                    <span>{outcome}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-[1.5rem] bg-white/[0.03] border border-white/6 p-5">
+              <div className="flex items-center gap-2 mb-4 text-white/60">
+                <BookOpen className="w-4 h-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">Resources to use after the video</p>
+              </div>
+              <ul className="space-y-3 text-white/75">
+                {currentModule.resources.map((resource) => (
+                  <li key={resource} className="flex gap-3">
+                    <span className="mt-2 w-1.5 h-1.5 rounded-full bg-white/70 shrink-0" />
+                    <span>{resource}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-2">Curriculum</p>
+                <h3 className="text-2xl font-serif">Module sequence</h3>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-white/40">Current module</p>
+                <p className="text-sm text-white/75">{currentModule.title}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {course.modules.map((module, index) => {
+                const previousModule = course.modules[index - 1];
+                const isCompleted = completedModuleIds.includes(module.id);
+                const isActive = module.id === currentModule.id;
+                const isUnlocked = index === 0 || completedModuleIds.includes(previousModule.id) || isCompleted || isActive;
+
+                return (
+                  <button
+                    key={module.id}
+                    type="button"
+                    onClick={() => startModule(index)}
+                    disabled={!isUnlocked || updating}
+                    className={`w-full rounded-[1.4rem] border p-4 text-left transition-colors ${
+                      isActive
+                        ? 'bg-white/10 border-white/20'
+                        : isUnlocked
+                          ? 'bg-white/[0.03] border-white/8 hover:bg-white/[0.05]'
+                          : 'bg-white/[0.015] border-white/[0.05] opacity-55'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{module.title}</p>
+                        <p className="text-sm text-white/45 mt-1">{module.description}</p>
+                      </div>
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
+                      ) : (
+                        <PlayCircle className="w-5 h-5 text-white/45 shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-3 text-xs text-white/40 uppercase tracking-[0.16em]">
+                      <span>{module.durationMinutes} min</span>
+                      <span>{isCompleted ? 'Completed' : isActive ? 'Current' : isUnlocked ? 'Unlocked' : 'Locked'}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="liquid-glass rounded-[2rem] p-7 border border-white/8">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-3">Continuity</p>
+            <h3 className="text-2xl font-serif mb-4">What happens after this module</h3>
+            <div className="space-y-4 text-white/70">
+              <div className="flex gap-3">
+                <Clock3 className="w-4 h-4 mt-1 shrink-0 text-white/55" />
+                <p>Keep your next session close to the current one. The course now stores the active module so you can re-enter faster.</p>
+              </div>
+              <div className="flex gap-3">
+                <Sparkles className="w-4 h-4 mt-1 shrink-0 text-white/55" />
+                <p>Finishing a module advances progress from completed modules instead of a loose percentage guess.</p>
+              </div>
+            </div>
+            <Link
+              to="/dashboard"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+            >
+              Return to learning HQ
+              <ArrowLeft className="w-4 h-4 rotate-180" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <AnimatePresence>
-        {showCelebration && (
+        {showCelebration ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{opacity: 0}}
+            animate={{opacity: 1}}
+            exit={{opacity: 0}}
             className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
           >
             <motion.div
-              initial={{ scale: 0.8, y: 30, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", duration: 0.6, bounce: 0.4 }}
-              className="liquid-glass rounded-3xl p-10 md:p-14 flex flex-col items-center text-center max-w-lg border border-white/20 shadow-[0_0_150px_rgba(255,255,255,0.15)] relative overflow-hidden"
+              initial={{scale: 0.88, y: 24, opacity: 0}}
+              animate={{scale: 1, y: 0, opacity: 1}}
+              exit={{scale: 0.92, opacity: 0}}
+              className="liquid-glass rounded-[2rem] border border-white/15 max-w-lg w-full p-8 text-center"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-              
-              <motion.div 
-                initial={{ rotate: -15, scale: 0.5 }}
-                animate={{ rotate: 0, scale: 1 }}
-                transition={{ type: "spring", duration: 0.8, delay: 0.2 }}
-                className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-8 shadow-[0_0_50px_rgba(255,255,255,0.2)] relative z-10 border border-white/20"
-              >
-                <Trophy className="w-10 h-10 text-white" />
-              </motion.div>
-              
-              <motion.h2 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-4xl font-serif tracking-tight mb-4 relative z-10"
-              >
-                Mastery Achieved
-              </motion.h2>
-              
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="text-white/60 text-lg mb-10 relative z-10"
-              >
-                You have successfully completed and mastered <strong className="text-white font-medium">{enrollment.courseName}</strong>.
-              </motion.p>
-              
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ delay: 0.8 }}
-                onClick={() => setShowCelebration(false)}
-                className="bg-white text-black px-10 py-4 rounded-full text-sm font-semibold hover:bg-gray-300 transition-colors relative z-10"
-              >
-                Return to Curriculum
-              </motion.button>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-4">Mastery Achieved</p>
+              <h3 className="text-4xl font-serif mb-4">{course.title} completed</h3>
+              <p className="text-white/62 leading-relaxed mb-6">
+                You finished every module in this track. The dashboard will now treat it as mastered and surface it as part of your completed system.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCelebration(false);
+                    navigate('/dashboard');
+                  }}
+                  className="bg-white text-black rounded-full px-5 py-3 text-sm font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Back to dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCelebration(false)}
+                  className="rounded-full px-5 py-3 text-sm font-medium border border-white/15 text-white/75 hover:text-white hover:border-white/30 transition-colors"
+                >
+                  Stay in course view
+                </button>
+              </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Temporary Toast Notification */}
-      <AnimatePresence>
-        {showToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-green-500/10 border border-green-500/30 backdrop-blur-md text-green-400 px-6 py-4 rounded-full shadow-[0_0_30px_rgba(34,197,94,0.15)] flex items-center gap-3 pointer-events-none"
-          >
-            <Trophy className="w-5 h-5" />
-            <span className="text-sm font-medium tracking-wide">Course Mastered! Incredible focus.</span>
-          </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );

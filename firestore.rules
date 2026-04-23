@@ -27,9 +27,13 @@ service cloud.firestore {
     // Entity Validation Helpers
     function isValidUser(data) {
       return data.keys().hasAll(['email', 'createdAt']) 
-        && data.keys().size() <= 3
+        && data.keys().size() <= 7
         && data.email is string && data.email.size() <= 256
         && (data.get('displayName', '') is string && data.get('displayName', '').size() <= 128)
+        && (data.get('focusGoal', '') is string && data.get('focusGoal', '').size() <= 160)
+        && (data.get('experienceLevel', '') is string && data.get('experienceLevel', '').size() <= 64)
+        && (data.get('weeklyCommitment', '') is string && data.get('weeklyCommitment', '').size() <= 64)
+        && (data.get('preferredSession', '') is string && data.get('preferredSession', '').size() <= 96)
         && data.createdAt == request.time;
     }
 
@@ -42,10 +46,21 @@ service cloud.firestore {
 
     function isValidEnrollment(data) {
       return data.keys().hasAll(['courseId', 'courseName', 'progress', 'lastAccessedAt', 'enrolledAt'])
-        && data.keys().size() == 5
+        && data.keys().size() == 12
         && data.courseId is string && data.courseId.size() <= 128
         && data.courseName is string && data.courseName.size() <= 128
+        && data.summary is string && data.summary.size() <= 240
+        && data.track is string && data.track.size() <= 80
+        && data.difficulty is string && data.difficulty.size() <= 40
+        && data.durationMinutes is number && data.durationMinutes >= 1 && data.durationMinutes <= 10000
         && data.progress is number && data.progress >= 0 && data.progress <= 100
+        && data.currentModuleId is string && data.currentModuleId.size() <= 128
+        && data.completedModuleIds is list && data.completedModuleIds.size() <= 32
+        && (
+          data.status == 'not_started'
+          || data.status == 'in_progress'
+          || data.status == 'completed'
+        )
         && data.lastAccessedAt == request.time
         && data.enrolledAt == request.time;
     }
@@ -61,10 +76,20 @@ service cloud.firestore {
       allow update: if isSignedIn() 
         && isValidId(userId)
         && request.auth.uid == userId 
-        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName'])
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName',
+          'focusGoal',
+          'experienceLevel',
+          'weeklyCommitment',
+          'preferredSession'
+        ])
         && incoming().email == existing().email
         && incoming().createdAt == existing().createdAt
-        && incoming().displayName is string && incoming().displayName.size() <= 128;
+        && (incoming().get('displayName', '') is string && incoming().get('displayName', '').size() <= 128)
+        && (incoming().get('focusGoal', '') is string && incoming().get('focusGoal', '').size() <= 160)
+        && (incoming().get('experienceLevel', '') is string && incoming().get('experienceLevel', '').size() <= 64)
+        && (incoming().get('weeklyCommitment', '') is string && incoming().get('weeklyCommitment', '').size() <= 64)
+        && (incoming().get('preferredSession', '') is string && incoming().get('preferredSession', '').size() <= 96);
       
       // Sub-Collection: Enrollments
       match /enrollments/{enrollmentId} {
@@ -76,12 +101,29 @@ service cloud.firestore {
         allow update: if isSignedIn() 
           && isValidId(userId) && isValidId(enrollmentId)
           && request.auth.uid == userId 
-          && incoming().diff(existing()).affectedKeys().hasOnly(['progress', 'lastAccessedAt'])
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'progress',
+            'lastAccessedAt',
+            'currentModuleId',
+            'completedModuleIds',
+            'status'
+          ])
           && incoming().progress is number && incoming().progress >= 0 && incoming().progress <= 100
+          && incoming().currentModuleId is string && incoming().currentModuleId.size() <= 128
+          && incoming().completedModuleIds is list && incoming().completedModuleIds.size() <= 32
+          && (
+            incoming().status == 'not_started'
+            || incoming().status == 'in_progress'
+            || incoming().status == 'completed'
+          )
           && incoming().lastAccessedAt == request.time
           && incoming().courseId == existing().courseId
           && incoming().courseName == existing().courseName
-          && incoming().enrolledAt == existing().enrolledAt;
+          && incoming().enrolledAt == existing().enrolledAt
+          && incoming().get('summary', '') == existing().get('summary', '')
+          && incoming().get('track', '') == existing().get('track', '')
+          && incoming().get('difficulty', '') == existing().get('difficulty', '')
+          && incoming().get('durationMinutes', 0) == existing().get('durationMinutes', 0);
       }
     }
 

@@ -1,137 +1,202 @@
 import {type FormEvent, useEffect, useState} from 'react';
-import { useNavigate } from 'react-router-dom';
-import { auth, db, handleFirestoreError } from '../lib/firebase';
-import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, User, Calendar, Mail, Loader2 } from 'lucide-react';
+import {doc, getDoc, updateDoc} from 'firebase/firestore';
+import {BookOpen, Calendar, Loader2, Mail, Target, User} from 'lucide-react';
+import {updateProfile} from 'firebase/auth';
+import {auth, db, handleFirestoreError} from '../lib/firebase';
+import {defaultMemberProfile, type MemberProfile} from '../lib/learningData';
 
 export default function ProfileSettings() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(auth.currentUser);
-  const [displayName, setDisplayName] = useState('');
+  const user = auth.currentUser;
+  const [profile, setProfile] = useState<MemberProfile>(defaultMemberProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((u) => {
-      if (!u) {
-        navigate('/');
-      } else {
-        setUser(u);
-        setDisplayName(u.displayName || '');
+    if (!user) {
+      return;
+    }
+
+    async function loadProfile() {
+      try {
+        const snapshot = await getDoc(doc(db, 'users', user.uid));
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          setProfile({
+            displayName: data.displayName || user.displayName || '',
+            focusGoal: data.focusGoal || defaultMemberProfile.focusGoal,
+            experienceLevel: data.experienceLevel || defaultMemberProfile.experienceLevel,
+            weeklyCommitment: data.weeklyCommitment || defaultMemberProfile.weeklyCommitment,
+            preferredSession: data.preferredSession || defaultMemberProfile.preferredSession,
+          });
+        } else {
+          setProfile({...defaultMemberProfile, displayName: user.displayName || ''});
+        }
+      } catch (error) {
+        console.error('Failed to load profile', error);
+      } finally {
         setLoading(false);
       }
-    });
-    return unsubscribe;
-  }, [navigate]);
+    }
 
-  const handleSave = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!user) return;
+    loadProfile();
+  }, [user]);
+
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) {
+      return;
+    }
+
     setSaving(true);
     setMessage('');
-    setErrorMsg('');
+    setErrorMessage('');
+
     try {
-      await updateProfile(user, { displayName });
-      await updateDoc(doc(db, 'users', user.uid), { displayName });
-      setMessage('Profile settings successfully updated.');
+      await updateProfile(user, {displayName: profile.displayName});
+      await updateDoc(doc(db, 'users', user.uid), {
+        displayName: profile.displayName,
+        focusGoal: profile.focusGoal,
+        experienceLevel: profile.experienceLevel,
+        weeklyCommitment: profile.weeklyCommitment,
+        preferredSession: profile.preferredSession,
+      });
+
+      setMessage('Your learning profile is updated and the dashboard will reflect the new guidance.');
     } catch (error) {
-      console.error(error);
       try {
         handleFirestoreError(error, 'update', `users/${user.uid}`);
-      } catch (err: any) {
-        setErrorMsg(err.message || 'Failed to update profile. Check permissions.');
+      } catch (delegatedError) {
+        setErrorMessage(delegatedError instanceof Error ? delegatedError.message : 'Failed to save profile settings.');
       }
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading || !user) {
-    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>;
+  if (!user || loading) {
+    return <div className="min-h-[50vh] flex items-center justify-center text-white/70">Loading profile settings...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-12 md:py-20 max-w-4xl mx-auto">
-      <button 
-        onClick={() => navigate('/dashboard')} 
-        className="mb-12 flex items-center gap-2 text-white/50 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-      </button>
-      
-      <div className="liquid-glass rounded-3xl p-8 md:p-12 max-w-2xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-serif tracking-tight mb-2">Profile Settings</h1>
-        <p className="text-white/40 text-sm mb-10">Update your learning persona and review your account details.</p>
-        
-        <form onSubmit={handleSave} className="flex flex-col gap-6">
-          <div className="space-y-2">
-            <label className="text-xs tracking-widest uppercase text-white/50 flex items-center gap-2">
-              <User className="w-4 h-4" /> Display Name
-            </label>
-            <input 
-              type="text" 
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Your full name"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-white/30 transition-colors"
-            />
+    <div className="grid grid-cols-1 xl:grid-cols-[0.85fr,1.15fr] gap-6">
+      <section className="liquid-glass rounded-[2rem] p-7 border border-white/8 h-fit">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-3">Identity</p>
+        <h2 className="text-3xl md:text-4xl font-serif tracking-tight mb-4">Tune the internal experience around how you learn</h2>
+        <p className="text-white/62 leading-relaxed mb-6">
+          These settings now power the dashboard copy, weekly cadence guidance, and how the app frames your next session.
+        </p>
+
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Email</p>
+            <p>{user.email || 'Unknown'}</p>
           </div>
-          
-          <div className="space-y-2">
-            <label className="text-xs tracking-widest uppercase text-white/50 flex items-center gap-2">
-              <Mail className="w-4 h-4" /> Email Address
-            </label>
-            <input 
-              type="email" 
-              value={user.email || ''}
-              disabled
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/50 outline-none cursor-not-allowed opacity-70"
+          <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Join date</p>
+            <p>{user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Unknown'}</p>
+          </div>
+          <div className="rounded-2xl bg-white/[0.03] border border-white/6 px-4 py-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-white/40 mb-1">Current system</p>
+            <p>{profile.weeklyCommitment}</p>
+            <p className="text-sm text-white/45 mt-1">{profile.preferredSession}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="liquid-glass rounded-[2rem] p-7 md:p-8 border border-white/8">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-3">Preferences</p>
+        <h3 className="text-2xl md:text-3xl font-serif mb-6">Profile settings</h3>
+
+        <form onSubmit={handleSave} className="space-y-5">
+          <label className="block">
+            <span className="text-xs uppercase tracking-[0.18em] text-white/45 mb-2 inline-flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Display name
+            </span>
+            <input
+              type="text"
+              value={profile.displayName}
+              onChange={(event) => setProfile((current) => ({...current, displayName: event.target.value}))}
+              className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
+              placeholder="How should Tutivex address you?"
             />
+          </label>
+
+          <label className="block">
+            <span className="text-xs uppercase tracking-[0.18em] text-white/45 mb-2 inline-flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              Primary focus goal
+            </span>
+            <input
+              type="text"
+              value={profile.focusGoal}
+              onChange={(event) => setProfile((current) => ({...current, focusGoal: event.target.value}))}
+              className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
+              placeholder="What are you optimizing for this month?"
+            />
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.18em] text-white/45 mb-2 inline-flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Experience level
+              </span>
+              <input
+                type="text"
+                value={profile.experienceLevel}
+                onChange={(event) => setProfile((current) => ({...current, experienceLevel: event.target.value}))}
+                className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
+                placeholder="Starter, Intermediate, Advanced"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.18em] text-white/45 mb-2 inline-flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Weekly commitment
+              </span>
+              <input
+                type="text"
+                value={profile.weeklyCommitment}
+                onChange={(event) => setProfile((current) => ({...current, weeklyCommitment: event.target.value}))}
+                className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
+                placeholder="How often will you train?"
+              />
+            </label>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs tracking-widest uppercase text-white/50 flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Join Date
-            </label>
-            <input 
-              type="text" 
-              value={user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString() : 'Unknown'}
-              disabled
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/50 outline-none cursor-not-allowed opacity-70"
+          <label className="block">
+            <span className="text-xs uppercase tracking-[0.18em] text-white/45 mb-2 inline-flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Preferred session format
+            </span>
+            <input
+              type="text"
+              value={profile.preferredSession}
+              onChange={(event) => setProfile((current) => ({...current, preferredSession: event.target.value}))}
+              className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
+              placeholder="What kind of session helps you do your best work?"
             />
-          </div>
-          
-          <div className="pt-4 mt-2 border-t border-white/10">
-            <button 
-              type="submit" 
+          </label>
+
+          <div className="pt-2">
+            <button
+              type="submit"
               disabled={saving}
-              className="w-full liquid-glass rounded-xl px-6 py-4 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full rounded-2xl bg-white text-black px-5 py-4 text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-55 inline-flex items-center justify-center gap-2"
             >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-white/60" /> Save in progress...
-                </>
-              ) : (
-                'Save Changes'
-              )}
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {saving ? 'Saving profile...' : 'Save profile settings'}
             </button>
           </div>
 
-          {message && (
-            <div className="text-sm text-center text-green-400 bg-green-400/10 rounded-lg py-3 px-4">
-              {message}
-            </div>
-          )}
-          {errorMsg && (
-            <div className="text-sm text-center text-red-400 bg-red-400/10 rounded-lg py-3 px-4">
-              {errorMsg}
-            </div>
-          )}
+          {message ? <div className="rounded-2xl bg-green-400/10 border border-green-400/20 px-4 py-3 text-sm text-green-300">{message}</div> : null}
+          {errorMessage ? <div className="rounded-2xl bg-red-400/10 border border-red-400/20 px-4 py-3 text-sm text-red-300">{errorMessage}</div> : null}
         </form>
-      </div>
+      </section>
     </div>
   );
 }

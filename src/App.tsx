@@ -11,6 +11,7 @@ import ProfileSettings from './components/ProfileSettings';
 import CourseDetail from './components/CourseDetail';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
+import CreditsTopUp from './components/CreditsTopUp';
 
 function LandingPage() {
   return (
@@ -37,6 +38,9 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<ProfileSettings />} />
               <Route path="/courses/:courseId" element={<CourseDetail />} />
+              <Route path="/credits" element={<CreditsTopUp />} />
+              <Route path="/checkout/success" element={<CreditsTopUp />} />
+              <Route path="/checkout/cancel" element={<CreditsTopUp />} />
             </Route>
           </Route>
         </Routes>

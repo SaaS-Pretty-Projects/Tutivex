@@ -3,13 +3,11 @@
  * Exports _sweepPollOne which delegates to the internal poll-and-apply helper.
  */
 
-import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { db } from './firebaseAdmin';
 import { fetchSafepayStatus } from './payments/safepayServer';
-import { classifyPaymentState } from '../../src/lib/money';
+import { classifyPaymentState } from './money';
 import { applyPaymentToStudentBalance } from './arrears';
-
-const db = admin.firestore();
 
 function requireEnv(key: string): string {
   const val = process.env[key];

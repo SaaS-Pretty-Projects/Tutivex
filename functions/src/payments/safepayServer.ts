@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'crypto';
-import type { Currency } from '../../../src/lib/money';
+import type { Currency } from '../money';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,6 +43,7 @@ export interface CreatePaymentSessionParams {
 export interface CreatePaymentSessionResult {
   ok: true;
   checkoutUrl: string;
+  providerTransactionId: string;
   rawResponse: string;
 }
 
@@ -70,20 +71,30 @@ export interface RawSafepayStatusResponse {
 // MD5 signing
 // ---------------------------------------------------------------------------
 
+function md5(value: string): string {
+  return createHash('md5').update(value).digest('hex');
+}
+
+export function computeSafepayPaymentHash(
+  amountMinor: number,
+  currency: Currency,
+  merchantId: string,
+  merchantSecret: string,
+): string {
+  return md5(`${amountMinor}${currency}${merchantId}${merchantSecret}`);
+}
+
 /**
- * Compute the SafePay HMAC-style signature used for both request signing and
- * IPN validation.
+ * Compute the SafePay status/IPN signature.
  *
  *   hash = md5(invoice + merchantId + merchantSecret)
  */
-export function computeSafepayHash(
+export function computeSafepayRequestHash(
   invoice: string,
   merchantId: string,
   merchantSecret: string,
 ): string {
-  return createHash('md5')
-    .update(`${invoice}${merchantId}${merchantSecret}`)
-    .digest('hex');
+  return md5(`${invoice}${merchantId}${merchantSecret}`);
 }
 
 /**
@@ -96,7 +107,7 @@ export function verifyIpnHash(
   merchantId: string,
   merchantSecret: string,
 ): boolean {
-  const expected = computeSafepayHash(invoice, merchantId, merchantSecret);
+  const expected = computeSafepayRequestHash(invoice, merchantId, merchantSecret);
   // Pad to equal length before comparing to maintain constant-time behaviour.
   const a = Buffer.from(receivedHash.padEnd(expected.length, '\0'));
   const b = Buffer.from(expected.padEnd(receivedHash.length, '\0'));
@@ -162,20 +173,24 @@ export async function createSafepaySession(
     safepayApiUrl,
   } = params;
 
-  const hash = computeSafepayHash(invoice, merchantId, merchantSecret);
+  const hash = computeSafepayPaymentHash(amountMinor, currency, merchantId, merchantSecret);
 
   const body = new URLSearchParams({
+    _cmd: 'payment',
     merchant_id: merchantId,
     invoice,
     amount: String(amountMinor),
     currency,
+    language: 'ENG',
     description,
-    first_name: customer.firstName,
-    last_name: customer.lastName,
-    email: customer.email,
-    phone: customer.phone,
-    country_code: customer.countryCode,
-    city: customer.city,
+    cl_fname: customer.firstName,
+    cl_lname: customer.lastName,
+    cl_email: customer.email,
+    cl_phone: customer.phone,
+    cl_country: customer.countryCode,
+    cl_city: customer.city,
+    psys: '',
+    get_trans: '1',
     success_url: successUrl,
     cancel_url: cancelUrl,
     ipn_url: ipnUrl,
@@ -194,12 +209,31 @@ export async function createSafepaySession(
     return { ok: false, error: `SafePay HTTP ${res.status}`, rawResponse };
   }
 
-  const lines = rawResponse.trim().split('\n');
-  if (lines[0] !== 'OK' || !lines[1]) {
+  const match = rawResponse.trim().match(/^OK\s+(.+)$/s);
+  const checkoutUrl = match?.[1]?.trim();
+
+  if (!checkoutUrl) {
     return { ok: false, error: 'Unexpected SafePay response format', rawResponse };
   }
 
-  return { ok: true, checkoutUrl: lines[1].trim(), rawResponse };
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(checkoutUrl);
+  } catch {
+    return { ok: false, error: 'SafePay returned an invalid checkout URL', rawResponse };
+  }
+  const allowedHosts = new Set(['www.safepayto.me', 'safepayto.me', 'loyalty.safepayto.me']);
+  if (parsedUrl.protocol !== 'https:' || !allowedHosts.has(parsedUrl.hostname.toLowerCase())) {
+    return { ok: false, error: 'Unexpected SafePay checkout host', rawResponse };
+  }
+
+  const transParam = parsedUrl.searchParams.get('trans_id') ?? '';
+  const providerTransactionId = parseTransId(transParam)?.txn;
+  if (!providerTransactionId) {
+    return { ok: false, error: 'SafePay response did not include a transaction id', rawResponse };
+  }
+
+  return { ok: true, checkoutUrl, providerTransactionId, rawResponse };
 }
 
 // ---------------------------------------------------------------------------
@@ -219,12 +253,14 @@ export async function fetchSafepayStatus(
   | SafepayErrorResult
 > {
   const { invoice, merchantId, merchantSecret, safepayStatusUrl } = params;
-  const hash = computeSafepayHash(invoice, merchantId, merchantSecret);
+  const hash = computeSafepayRequestHash(invoice, merchantId, merchantSecret);
 
   const body = new URLSearchParams({
+    _cmd: 'request',
     merchant_id: merchantId,
     invoice,
     hash,
+    output: 'json',
   });
 
   const res = await fetch(safepayStatusUrl, {

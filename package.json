@@ -10,6 +10,7 @@
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "firebase:deploy:rules": "npx firebase-tools deploy --only firestore:rules",
+    "firebase:deploy:functions": "npx firebase-tools deploy --only functions",
     "firebase:login": "npx firebase-tools login"
   },
   "dependencies": {

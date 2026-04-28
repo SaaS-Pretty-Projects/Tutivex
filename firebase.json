@@ -5,5 +5,12 @@
       "database": "ai-studio-0e73c385-eb8b-44ad-8d0b-940e22df006d",
       "rules": "firestore.rules"
     }
-  ]
+  ],
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs22",
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ]
+  }
 }

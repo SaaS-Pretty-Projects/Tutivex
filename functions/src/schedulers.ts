@@ -5,12 +5,10 @@
  * See docs/arrears/data-model.md §2, §3.4, §4.
  */
 
-import * as admin from 'firebase-admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { db } from './firebaseAdmin';
 import { applyPaymentToStudentBalance } from './arrears';
-import type { AgingBucket, ArrearsInvoice } from '../../src/lib/arrearsTypes';
-
-const db = admin.firestore();
+import type { AgingBucket, ArrearsInvoice } from './arrearsTypes';
 
 // ---------------------------------------------------------------------------
 // Aging bucket computation
@@ -67,7 +65,7 @@ export async function computeAgingBuckets(): Promise<{ processed: number }> {
       update.status = 'overdue';
     }
 
-    batch.update(doc.ref, update);
+    batch.update(doc.ref, update as FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData>);
     count++;
 
     // Firestore batch limit is 500 operations.
@@ -101,19 +99,18 @@ export async function sweepProcessingPayments(): Promise<{
   escalated: number;
 }> {
   const cutoff = new Date(Date.now() - SWEEP_WINDOW_HOURS * 60 * 60 * 1000);
-  const cutoffTimestamp = admin.firestore.Timestamp.fromDate(cutoff);
 
   const snap = await db
     .collection('payment_orders')
     .where('status', '==', 'processing')
-    .where('createdAt', '>=', cutoffTimestamp)
+    .where('createdAt', '<=', Timestamp.now())
     .get();
 
   let polled = 0;
   let escalated = 0;
 
   for (const doc of snap.docs) {
-    const order = doc.data() as { invoice: string; createdAt: admin.firestore.Timestamp };
+    const order = doc.data() as { invoice: string; createdAt: Timestamp };
     const ageMs = Date.now() - order.createdAt.toMillis();
     const ageHours = ageMs / 3_600_000;
 
@@ -163,8 +160,8 @@ export async function dailyReconciliation(): Promise<{
   const todayMidnight = new Date(yesterday);
   todayMidnight.setUTCDate(todayMidnight.getUTCDate() + 1);
 
-  const startTs = admin.firestore.Timestamp.fromDate(yesterday);
-  const endTs = admin.firestore.Timestamp.fromDate(todayMidnight);
+  const startTs = Timestamp.fromDate(yesterday);
+  const endTs = Timestamp.fromDate(todayMidnight);
 
   const completedSnap = await db
     .collection('payment_orders')

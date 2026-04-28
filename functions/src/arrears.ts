@@ -12,12 +12,11 @@
  * See docs/arrears/data-model.md for the full design.
  */
 
-import * as admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { classifyPaymentState, type Currency } from '../../src/lib/money';
+import { db } from './firebaseAdmin';
+import { classifyPaymentState, type Currency } from './money';
 import {
   buildInvoiceId,
-  computeSafepayHash,
   createSafepaySession,
   fetchSafepayStatus,
   verifyIpnHash,
@@ -28,9 +27,7 @@ import type {
   StudentBalance,
   TutorEarningEntry,
   TutorEarningsSummary,
-} from '../../src/lib/arrearsTypes';
-
-const db = admin.firestore();
+} from './arrearsTypes';
 
 // ---------------------------------------------------------------------------
 // Environment helpers — read secrets at call-time, never at module load.
@@ -91,6 +88,7 @@ export async function createSafepayPaymentSession(data: {
   const merchantSecret = requireEnv('SAFEPAY_MERCHANT_SECRET');
   const baseUrl = requireEnv('APP_BASE_URL');
   const safepayApiUrl = requireEnv('SAFEPAY_API_URL');
+  const safepayIpnUrl = requireEnv('SAFEPAY_IPN_URL');
 
   const invoice = buildInvoiceId(context.auth.uid);
 
@@ -102,7 +100,7 @@ export async function createSafepayPaymentSession(data: {
     customer,
     successUrl: `${baseUrl}/checkout/success?invoice=${invoice}`,
     cancelUrl: `${baseUrl}/checkout/cancel?invoice=${invoice}`,
-    ipnUrl: `${baseUrl}/api/safepay-ipn`,
+    ipnUrl: safepayIpnUrl,
     merchantId,
     merchantSecret,
     safepayApiUrl,
@@ -117,7 +115,7 @@ export async function createSafepayPaymentSession(data: {
   const order: Omit<PaymentOrder, 'creditAppliedAt'> & { creditAppliedAt: null } = {
     invoice,
     studentUid: context.auth.uid,
-    providerTransactionId: null,
+    providerTransactionId: result.providerTransactionId,
     amountMinor,
     currency,
     purpose: 'credit_topup',
@@ -310,9 +308,7 @@ export async function completeLesson(
       netMinor,
       currency,
       commissionRate: COMMISSION_RATE,
-      lessonCompletedAt: admin.firestore.Timestamp.fromDate(
-        new Date(lessonCompletedAt),
-      ),
+      lessonCompletedAt: new Date(lessonCompletedAt) as any,
       recordedAt: FieldValue.serverTimestamp() as any,
       payoutRequestId: null,
     };

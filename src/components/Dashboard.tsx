@@ -7,6 +7,7 @@ import {
   BookOpen,
   CheckCircle2,
   Clock3,
+  CreditCard,
   Loader2,
   Play,
   Search,
@@ -22,6 +23,7 @@ import {
   getNextModuleId,
   type MemberProfile,
 } from '../lib/learningData';
+import StudentArrearsBanner from './StudentArrearsBanner';
 
 interface EnrollmentRecord {
   id: string;
@@ -220,6 +222,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 md:space-y-10">
+      <StudentArrearsBanner onTopUp={(currency) => navigate(`/credits?currency=${currency}`)} />
+
       <section className="grid grid-cols-1 xl:grid-cols-[1.5fr,1fr] gap-6">
         <div className="liquid-glass rounded-[2rem] p-7 md:p-9 border border-white/10 overflow-hidden relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.12),_transparent_40%)] pointer-events-none" />
@@ -256,6 +260,13 @@ export default function Dashboard() {
                 className="rounded-full px-5 py-3 text-sm font-medium border border-white/15 text-white/75 hover:text-white hover:border-white/30 transition-colors"
               >
                 Refine learning profile
+              </Link>
+              <Link
+                to="/credits"
+                className="rounded-full px-5 py-3 text-sm font-medium border border-white/15 text-white/75 hover:text-white hover:border-white/30 transition-colors inline-flex items-center gap-2"
+              >
+                <CreditCard className="w-4 h-4" />
+                Top up credits
               </Link>
             </div>
             {nextModuleTitle ? (

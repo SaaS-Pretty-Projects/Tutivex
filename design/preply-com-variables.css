@@ -1,0 +1,85 @@
+:root {
+  /* Colors — Primary */
+  --color-primary: #ff7aac;
+  --color-secondary: #121117;
+  --color-accent: #99c5ff;
+
+  /* Colors — Neutrals */
+  --color-neutral-50: #ffffff;
+  --color-neutral-100: #384047;
+  --color-neutral-200: #4d4c5c;
+  --color-neutral-300: #dcdce5;
+  --color-neutral-400: #000000;
+  --color-neutral-500: #808080;
+  --color-neutral-600: #6a697c;
+
+  /* Colors — Backgrounds */
+  --color-bg: #141414;
+  --color-bg-1: #ff7aac;
+  --color-bg-2: #ffffff;
+  --color-bg-3: #3ddabe;
+  --color-bg-4: #121117;
+
+  /* Colors — Text */
+  --color-text: #384047;
+  --color-text-1: #121117;
+  --color-text-2: #ffffff;
+  --color-text-3: #0000ee;
+  --color-text-4: #000000;
+
+  /* Typography — Families */
+  --font-body: 'Figtree', sans-serif;
+  --font-body: 'PreplyInterV', sans-serif;
+  --font-font-2: 'Platform', sans-serif;
+  --font-body: 'BlinkMacSystemFont', sans-serif;
+  --font-body: 'Arial', sans-serif;
+
+  /* Typography — Scale */
+  --font-size-96: 96px;
+  --font-size-64: 64px;
+  --font-size-48: 48px;
+  --font-size-32: 32px;
+  --font-size-24: 24px;
+  --font-size-20: 20px;
+  --font-size-18: 18px;
+  --font-size-16: 16px;
+  --font-size-14: 14px;
+  --font-size-13.3333: 13.3333px;
+  --font-size-0: 0px;
+
+  /* Spacing */
+  --spacing-2: 2px;
+  --spacing-24: 24px;
+  --spacing-48: 48px;
+  --spacing-60: 60px;
+  --spacing-69: 69px;
+  --spacing-96: 96px;
+  --spacing-160: 160px;
+
+  /* Border Radius */
+  --radius-xs: 2px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* Box Shadows */
+  --shadow-sm: rgba(9, 15, 25, 0.1) 0px 0px 8px 0px;
+  --shadow-xl: rgba(0, 0, 0, 0.3) 0px 32px 68px 0px;
+
+  /* Original Site Variables */
+  /* — other — */
+  --ds-dialog-overlay-z-index-override: 100;
+  --ds-dialog-content-z-index-override: 100;
+  --ds-onboarding-tooltip-z-index-override: 101;
+  --ds-tooltip-z-index-override: 101;
+  --ds-dropdown-menu-overlay-z-index-override: var(--ds-dialog-overlay-z-index-override);
+  --ds-dropdown-menu-content-z-index-override: var(--ds-dialog-content-z-index-override);
+  /* — dependencies — */
+  --ds-dropdown-menu-overlay-z-index-override: --ds-dialog-overlay-z-index-override;
+  --ds-dropdown-menu-content-z-index-override: --ds-dialog-content-z-index-override;
+  /* — semantic — */
+  success: [object Object];
+  warning: [object Object];
+  error: [object Object];
+  info: [object Object];
+
+}

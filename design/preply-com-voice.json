@@ -1,0 +1,107 @@
+{
+  "tone": "friendly",
+  "pronoun": "you-only",
+  "headingStyle": "unknown",
+  "headingLengthClass": "tight",
+  "ctaVerbs": [
+    {
+      "value": "show",
+      "count": 3
+    },
+    {
+      "value": "book",
+      "count": 2
+    },
+    {
+      "value": "english",
+      "count": 1
+    },
+    {
+      "value": "log",
+      "count": 1
+    },
+    {
+      "value": "find",
+      "count": 1
+    },
+    {
+      "value": "become",
+      "count": 1
+    },
+    {
+      "value": "how",
+      "count": 1
+    },
+    {
+      "value": "refer",
+      "count": 1
+    },
+    {
+      "value": "status",
+      "count": 1
+    },
+    {
+      "value": "we",
+      "count": 1
+    }
+  ],
+  "buttonPatterns": [
+    {
+      "value": "show more",
+      "count": 3
+    },
+    {
+      "value": "english, usd",
+      "count": 1
+    },
+    {
+      "value": "log in",
+      "count": 1
+    },
+    {
+      "value": "find your tutor",
+      "count": 1
+    },
+    {
+      "value": "become a tutor",
+      "count": 1
+    },
+    {
+      "value": "how our platform works",
+      "count": 1
+    },
+    {
+      "value": "book a demo\nrefer your company",
+      "count": 1
+    },
+    {
+      "value": "book a demo",
+      "count": 1
+    },
+    {
+      "value": "refer your company",
+      "count": 1
+    },
+    {
+      "value": "status",
+      "count": 1
+    },
+    {
+      "value": "we stand with ukraine",
+      "count": 1
+    },
+    {
+      "value": "affiliate program",
+      "count": 1
+    },
+    {
+      "value": "need any help?",
+      "count": 1
+    }
+  ],
+  "sampleHeadings": [],
+  "stats": {
+    "buttons": 15,
+    "headings": 0
+  }
+}

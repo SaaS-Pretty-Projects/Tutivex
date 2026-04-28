@@ -1,0 +1,879 @@
+{
+  "colors": {
+    "all": [
+      {
+        "hex": "#121117",
+        "rgb": {
+          "r": 18,
+          "g": 17,
+          "b": 23,
+          "a": 1
+        },
+        "hsl": {
+          "h": 250,
+          "s": 15,
+          "l": 8
+        },
+        "count": 1916,
+        "contexts": [
+          "text",
+          "border",
+          "background"
+        ]
+      },
+      {
+        "hex": "#ffffff",
+        "rgb": {
+          "r": 255,
+          "g": 255,
+          "b": 255,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 100
+        },
+        "count": 477,
+        "contexts": [
+          "text",
+          "border",
+          "background"
+        ]
+      },
+      {
+        "hex": "#384047",
+        "rgb": {
+          "r": 56,
+          "g": 64,
+          "b": 71,
+          "a": 1
+        },
+        "hsl": {
+          "h": 208,
+          "s": 12,
+          "l": 25
+        },
+        "count": 256,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#0000ee",
+        "rgb": {
+          "r": 0,
+          "g": 0,
+          "b": 238,
+          "a": 1
+        },
+        "hsl": {
+          "h": 240,
+          "s": 100,
+          "l": 47
+        },
+        "count": 192,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#4d4c5c",
+        "rgb": {
+          "r": 77,
+          "g": 76,
+          "b": 92,
+          "a": 1
+        },
+        "hsl": {
+          "h": 244,
+          "s": 10,
+          "l": 33
+        },
+        "count": 148,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#dcdce5",
+        "rgb": {
+          "r": 220,
+          "g": 220,
+          "b": 229,
+          "a": 1
+        },
+        "hsl": {
+          "h": 240,
+          "s": 15,
+          "l": 88
+        },
+        "count": 36,
+        "contexts": [
+          "border",
+          "background"
+        ]
+      },
+      {
+        "hex": "#000000",
+        "rgb": {
+          "r": 0,
+          "g": 0,
+          "b": 0,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 0
+        },
+        "count": 35,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#808080",
+        "rgb": {
+          "r": 128,
+          "g": 128,
+          "b": 128,
+          "a": 1
+        },
+        "hsl": {
+          "h": 0,
+          "s": 0,
+          "l": 50
+        },
+        "count": 6,
+        "contexts": [
+          "text",
+          "border"
+        ]
+      },
+      {
+        "hex": "#ff7aac",
+        "rgb": {
+          "r": 255,
+          "g": 122,
+          "b": 172,
+          "a": 1
+        },
+        "hsl": {
+          "h": 337,
+          "s": 100,
+          "l": 74
+        },
+        "count": 5,
+        "contexts": [
+          "background"
+        ]
+      },
+      {
+        "hex": "#ffe03d",
+        "rgb": {
+          "r": 255,
+          "g": 224,
+          "b": 61,
+          "a": 1
+        },
+        "hsl": {
+          "h": 50,
+          "s": 100,
+          "l": 62
+        },
+        "count": 4,
+        "contexts": [
+          "background"
+        ]
+      },
+      {
+        "hex": "#141452",
+        "rgb": {
+          "r": 20,
+          "g": 20,
+          "b": 82,
+          "a": 0.15
+        },
+        "hsl": {
+          "h": 240,
+          "s": 61,
+          "l": 20
+        },
+        "count": 4,
+        "contexts": [
+          "border"
+        ]
+      },
+      {
+        "hex": "#6a697c",
+        "rgb": {
+          "r": 106,
+          "g": 105,
+          "b": 124,
+          "a": 1
+        },
+        "hsl": {
+          "h": 243,
+          "s": 8,
+          "l": 45
+        },
+        "count": 3,
+        "contexts": [
+          "border"
+        ]
+      },
+      {
+        "hex": "#2885fd",
+        "rgb": {
+          "r": 40,
+          "g": 133,
+          "b": 253,
+          "a": 1
+        },
+        "hsl": {
+          "h": 214,
+          "s": 98,
+          "l": 57
+        },
+        "count": 2,
+        "contexts": [
+          "border",
+          "background"
+        ]
+      },
+      {
+        "hex": "#7bead6",
+        "rgb": {
+          "r": 123,
+          "g": 234,
+          "b": 214,
+          "a": 1
+        },
+        "hsl": {
+          "h": 169,
+          "s": 73,
+          "l": 70
+        },
+        "count": 1,
+        "contexts": [
+          "background"
+        ]
+      },
+      {
+        "hex": "#3ddabe",
+        "rgb": {
+          "r": 61,
+          "g": 218,
+          "b": 190,
+          "a": 1
+        },
+        "hsl": {
+          "h": 169,
+          "s": 68,
+          "l": 55
+        },
+        "count": 1,
+        "contexts": [
+          "background"
+        ]
+      },
+      {
+        "hex": "#99c5ff",
+        "rgb": {
+          "r": 153,
+          "g": 197,
+          "b": 255,
+          "a": 1
+        },
+        "hsl": {
+          "h": 214,
+          "s": 100,
+          "l": 80
+        },
+        "count": 1,
+        "contexts": [
+          "background"
+        ]
+      }
+    ]
+  },
+  "regions": [
+    {
+      "role": "nav",
+      "tag": "header",
+      "bounds": {
+        "x": 0,
+        "y": -16,
+        "w": 1280,
+        "h": 72
+      },
+      "heading": null,
+      "buttonCount": 21,
+      "cardCount": 50,
+      "className": "Main-module_TokyoPinkBg__j0dfu"
+    },
+    {
+      "role": "footer",
+      "tag": "footer",
+      "bounds": {
+        "x": 0,
+        "y": 5663.0625,
+        "w": 1280,
+        "h": 1036
+      },
+      "heading": null,
+      "buttonCount": 7,
+      "cardCount": 69,
+      "className": "styles_FooterWrapper__BEMot"
+    },
+    {
+      "role": "testimonials",
+      "tag": "section",
+      "bounds": {
+        "x": 32,
+        "y": 5723.0625,
+        "w": 304,
+        "h": 324
+      },
+      "heading": null,
+      "buttonCount": 3,
+      "cardCount": 12,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "pricing",
+      "tag": "section",
+      "bounds": {
+        "x": 336,
+        "y": 5723.0625,
+        "w": 304,
+        "h": 324
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 8,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 640,
+        "y": 5723.0625,
+        "w": 304,
+        "h": 324
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 6,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 944,
+        "y": 5723.0625,
+        "w": 304,
+        "h": 324
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 8,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 32,
+        "y": 6095.0625,
+        "w": 304,
+        "h": 156
+      },
+      "heading": null,
+      "buttonCount": 1,
+      "cardCount": 0,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 336,
+        "y": 6095.0625,
+        "w": 304,
+        "h": 156
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 640,
+        "y": 6095.0625,
+        "w": 304,
+        "h": 156
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 944,
+        "y": 6095.0625,
+        "w": 304,
+        "h": 156
+      },
+      "heading": null,
+      "buttonCount": 2,
+      "cardCount": 0,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 32,
+        "y": 6299.0625,
+        "w": 304,
+        "h": 300
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 7,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 336,
+        "y": 6299.0625,
+        "w": 304,
+        "h": 300
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 9,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 640,
+        "y": 6299.0625,
+        "w": 304,
+        "h": 300
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 9,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 944,
+        "y": 6299.0625,
+        "w": 304,
+        "h": 300
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 10,
+      "className": "styles_FooterLinkBlock__3Te79"
+    },
+    {
+      "role": "content",
+      "tag": "section",
+      "bounds": {
+        "x": 32,
+        "y": 6599.0625,
+        "w": 1216,
+        "h": 52
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": "styles_FooterLegalBlockContainer__NnPV2"
+    },
+    {
+      "role": "sidebar",
+      "tag": "aside",
+      "bounds": {
+        "x": 0,
+        "y": 6699.0625,
+        "w": 1280,
+        "h": 0
+      },
+      "heading": null,
+      "buttonCount": 0,
+      "cardCount": 0,
+      "className": null
+    }
+  ],
+  "componentClusters": [
+    {
+      "kind": "button",
+      "structuralHash": "button>span",
+      "instanceCount": 6,
+      "variants": [
+        {
+          "css": {
+            "background": "rgb(18, 17, 23)",
+            "color": "rgb(255, 255, 255)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "8px",
+            "border": "2px solid rgba(18, 17, 23, 0)",
+            "fontSize": "14px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 1
+        },
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "6px 24px 6px 24px",
+            "borderRadius": "8px",
+            "border": "2px solid rgba(0, 0, 0, 0)",
+            "fontSize": "18px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 4
+        },
+        {
+          "css": {
+            "background": "rgb(255, 122, 172)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "8px",
+            "border": "2px solid rgb(18, 17, 23)",
+            "fontSize": "18px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "button>div",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 4px 0px 16px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "a>span",
+      "instanceCount": 6,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "6px 16px 6px 16px",
+            "borderRadius": "8px",
+            "border": "2px solid rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 3
+        },
+        {
+          "css": {
+            "background": "rgb(18, 17, 23)",
+            "color": "rgb(255, 255, 255)",
+            "padding": "6px 28px 6px 28px",
+            "borderRadius": "8px",
+            "border": "2px solid rgba(18, 17, 23, 0)",
+            "fontSize": "18px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 2
+        },
+        {
+          "css": {
+            "background": "rgb(153, 197, 255)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "6px 28px 6px 28px",
+            "borderRadius": "8px",
+            "border": "2px solid rgb(18, 17, 23)",
+            "fontSize": "18px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "div>span",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(18, 17, 23)",
+            "fontSize": "18px",
+            "fontWeight": "600"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "button",
+      "instanceCount": 7,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 3
+        },
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(255, 255, 255)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(255, 255, 255)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 4
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "structuralHash": "div>div>div",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "card",
+      "structuralHash": "div>div",
+      "instanceCount": 3,
+      "variants": [
+        {
+          "css": {
+            "background": "rgb(255, 255, 255)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "32px 32px 0px 32px",
+            "borderRadius": "4px",
+            "border": "1px solid rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 3
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "div>div",
+      "instanceCount": 1,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(18, 17, 23)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(18, 17, 23)",
+            "fontSize": "14px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 1
+        }
+      ]
+    },
+    {
+      "kind": "button",
+      "structuralHash": "button>img",
+      "instanceCount": 2,
+      "variants": [
+        {
+          "css": {
+            "background": "rgba(0, 0, 0, 0)",
+            "color": "rgb(0, 0, 0)",
+            "padding": "0px 0px 0px 0px",
+            "borderRadius": "0px",
+            "border": "0px none rgb(0, 0, 0)",
+            "fontSize": "13.3333px",
+            "fontWeight": "400"
+          },
+          "instanceCount": 2
+        }
+      ]
+    }
+  ],
+  "accessibility": {
+    "remediation": []
+  },
+  "cssHealth": {
+    "sheets": [
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 66337,
+        "usedBytes": 2084,
+        "unusedBytes": 64253,
+        "unusedPercent": 97
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 15203,
+        "usedBytes": 905,
+        "unusedBytes": 14298,
+        "unusedPercent": 94
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 185,
+        "usedBytes": 0,
+        "unusedBytes": 185,
+        "unusedPercent": 100
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 15199,
+        "usedBytes": 15124,
+        "unusedBytes": 75,
+        "unusedPercent": 0
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 143298,
+        "usedBytes": 15391,
+        "unusedBytes": 127907,
+        "unusedPercent": 89
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 571,
+        "usedBytes": 546,
+        "unusedBytes": 25,
+        "unusedPercent": 4
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 33318,
+        "usedBytes": 12357,
+        "unusedBytes": 20961,
+        "unusedPercent": 63
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 31,
+        "usedBytes": 0,
+        "unusedBytes": 31,
+        "unusedPercent": 100
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 6157,
+        "usedBytes": 1573,
+        "unusedBytes": 4584,
+        "unusedPercent": 74
+      },
+      {
+        "url": "https://preply.com/",
+        "totalBytes": 1351,
+        "usedBytes": 952,
+        "unusedBytes": 399,
+        "unusedPercent": 30
+      },
+      {
+        "url": "https://static.preply.com/static/ssr/_next/static/css/a0d36eb0dd4b83db.css",
+        "totalBytes": 4267,
+        "usedBytes": 2865,
+        "unusedBytes": 1402,
+        "unusedPercent": 33
+      }
+    ],
+    "totalBytes": 285917,
+    "usedBytes": 51797,
+    "unusedBytes": 234120,
+    "unusedPercent": 82,
+    "importantCount": 2,
+    "duplicates": 3150,
+    "vendorPrefixes": {
+      "webkit": 32,
+      "moz": 15,
+      "ms": 1,
+      "o": 0
+    },
+    "keyframes": [],
+    "specificity": {
+      "max": [
+        2,
+        10,
+        65
+      ],
+      "average": [
+        0,
+        1.62,
+        0.4
+      ],
+      "count": 2330
+    },
+    "issues": [
+      "2 !important rules",
+      "3150 duplicate declarations",
+      "82% unused CSS"
+    ]
+  }
+}

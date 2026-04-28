@@ -132,5 +132,112 @@ service cloud.firestore {
       // Create allowed for anyone (even unauthenticated) for the newsletter landing page
       allow create: if isValidId(subscriptionId) && isValidSubscription(incoming());
     }
+
+    // -------------------------------------------------------------------------
+    // Arrears Ledger — Money Collections
+    //
+    // Security posture:
+    //   • All money writes go through Cloud Functions (service account).
+    //     Client-side writes are rejected for every collection below.
+    //   • Students / tutors may read their own documents only.
+    //   • creditAppliedAt may NEVER be written by the client — only the
+    //     Functions service account (implicitly enforced by denying all client
+    //     writes to payment_orders).
+    //   • audit_log is insert-only by the service account; clients cannot read.
+    // -------------------------------------------------------------------------
+
+    // payment_orders/{invoice}
+    // Read: the owning student only.
+    // Write: Cloud Functions service account only (no client writes).
+    match /payment_orders/{invoice} {
+      allow get: if isSignedIn()
+        && isValidId(invoice)
+        && resource.data.studentUid == request.auth.uid;
+      allow list: if isSignedIn()
+        && request.query.limit <= 50
+        && resource.data.studentUid == request.auth.uid;
+      // All writes are via Cloud Functions — deny direct client writes.
+      allow write: if false;
+    }
+
+    // arrears_invoices/{invoiceId}
+    // Read: the owning student (own invoices) or admin (custom claim).
+    // Write: Cloud Functions only.
+    match /arrears_invoices/{invoiceId} {
+      allow get: if isSignedIn()
+        && isValidId(invoiceId)
+        && (resource.data.studentUid == request.auth.uid
+            || request.auth.token.get('admin', false) == true);
+      allow list: if isSignedIn()
+        && request.query.limit <= 500
+        && (
+          request.auth.token.get('admin', false) == true
+          || resource.data.studentUid == request.auth.uid
+        );
+      allow write: if false;
+    }
+
+    // student_balances/{studentUid}
+    // Read: the student whose balance it is, or admin.
+    // Write: Cloud Functions only — this is a projection; never written by client.
+    match /student_balances/{studentUid} {
+      allow get: if isSignedIn()
+        && isValidId(studentUid)
+        && (request.auth.uid == studentUid
+            || request.auth.token.get('admin', false) == true);
+      allow write: if false;
+    }
+
+    // tutor_earnings_ledger/{lessonId}
+    // Read: the tutor whose lesson it is, or admin.
+    // Write: Cloud Functions only (append-only; no client mutations).
+    match /tutor_earnings_ledger/{lessonId} {
+      allow get: if isSignedIn()
+        && isValidId(lessonId)
+        && (resource.data.tutorUid == request.auth.uid
+            || request.auth.token.get('admin', false) == true);
+      allow list: if isSignedIn()
+        && request.query.limit <= 100
+        && (
+          request.auth.token.get('admin', false) == true
+          || resource.data.tutorUid == request.auth.uid
+        );
+      allow write: if false;
+    }
+
+    // tutor_earnings_summary/{tutorUid}
+    // Read: the tutor themselves, or admin.
+    // Write: Cloud Functions only.
+    match /tutor_earnings_summary/{tutorUid} {
+      allow get: if isSignedIn()
+        && isValidId(tutorUid)
+        && (request.auth.uid == tutorUid
+            || request.auth.token.get('admin', false) == true);
+      allow write: if false;
+    }
+
+    // payout_requests/{requestId}
+    // Read: the requesting tutor, or admin.
+    // Write: Cloud Functions only.
+    match /payout_requests/{requestId} {
+      allow get: if isSignedIn()
+        && isValidId(requestId)
+        && (resource.data.tutorUid == request.auth.uid
+            || request.auth.token.get('admin', false) == true);
+      allow list: if isSignedIn()
+        && request.query.limit <= 200
+        && (
+          request.auth.token.get('admin', false) == true
+          || resource.data.tutorUid == request.auth.uid
+        );
+      allow write: if false;
+    }
+
+    // audit_log/{entry}
+    // Append-only by Cloud Functions service account.
+    // No client read or write.
+    match /audit_log/{entry} {
+      allow read, write: if false;
+    }
   }
 }

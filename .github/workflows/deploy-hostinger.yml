@@ -50,9 +50,6 @@ jobs:
 
           find dist -type f ! -name '.deploy-manifest' -printf '%P\n' | LC_ALL=C sort > dist/.deploy-manifest
 
-      - name: Install lftp
-        run: sudo apt-get update && sudo apt-get install -y lftp
-
       - name: Deploy dist to Hostinger
         env:
           HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
@@ -120,60 +117,49 @@ jobs:
 
           echo "Deploying dist/ via ${protocol} on port ${port} into ${target_dir}"
 
-          remote_manifest_local="$(mktemp)"
-          cleanup_script="$(mktemp)"
-
-          if ! timeout 45s lftp -u "$HOSTINGER_USERNAME","$HOSTINGER_PASSWORD" "${protocol}://${host}:${port}" <<EOF
-          set cmd:fail-exit no
-          set net:max-retries 1
-          set net:timeout 12
-          set net:reconnect-interval-base 2
-          set sftp:auto-confirm yes
-          set ssl:verify-certificate no
-          set ftp:ssl-allow no
-          set ftp:passive-mode yes
-          get -O ${remote_manifest_local} ${remote_prefix}.deploy-manifest
-          bye
-          EOF
-          then
-            echo "::notice::Remote manifest not found or unreadable. Continuing without cleanup of previous files."
+          if [ "$protocol" != "ftp" ]; then
+            echo "::error::This workflow currently supports FTP mode only. Set HOSTINGER_PROTOCOL=ftp."
+            exit 1
           fi
 
-          if [ -s "$remote_manifest_local" ]; then
-            : > "$cleanup_script"
-            while IFS= read -r remote_file; do
-              if [ -n "$remote_file" ]; then
-                printf 'rm %s%s\n' "$remote_prefix" "$remote_file" >> "$cleanup_script"
-              fi
-            done < "$remote_manifest_local"
-            printf 'rm %s.deploy-manifest\n' "$remote_prefix" >> "$cleanup_script"
-
-            lftp -u "$HOSTINGER_USERNAME","$HOSTINGER_PASSWORD" "${protocol}://${host}:${port}" < "$cleanup_script"
+          ftp_base="ftp://${host}:${port}"
+          if [ "$target_dir" = "." ]; then
+            target_dir=""
+            remote_prefix=""
           fi
 
-          echo "Deploying build into target webroot: ${target_dir}"
-          cd_commands=""
-          if [ "$target_dir" != "." ]; then
-            cd_commands="mkdir -p ${target_dir}; cd ${target_dir};"
-          fi
+          echo "Deploying build into target webroot: ${target_dir:-.}"
 
-          timeout 90s lftp -u "$HOSTINGER_USERNAME","$HOSTINGER_PASSWORD" "${protocol}://${host}:${port}" -e "
-            set cmd:fail-exit yes;
-            set net:max-retries 1;
-            set net:timeout 12;
-            set net:reconnect-interval-base 2;
-            set sftp:auto-confirm yes;
-            set ssl:verify-certificate no;
-            set ftp:ssl-allow no;
-            set ftp:passive-mode yes;
-            ${cd_commands}
-            set cmd:fail-exit no;
-            rm index.php;
-            rm default.php;
-            set cmd:fail-exit yes;
-            mirror --reverse --verbose --parallel=2 dist/ .;
-            bye
-          "
+          # Remove known Hostinger placeholder entry files if present.
+          curl --silent --show-error --fail --user "$HOSTINGER_USERNAME:$HOSTINGER_PASSWORD" \
+            --quote "DELE ${remote_prefix}index.php" "$ftp_base" >/dev/null 2>&1 || true
+          curl --silent --show-error --fail --user "$HOSTINGER_USERNAME:$HOSTINGER_PASSWORD" \
+            --quote "DELE ${remote_prefix}default.php" "$ftp_base" >/dev/null 2>&1 || true
+
+          # Upload all files in dist/ preserving relative paths.
+          while IFS= read -r rel; do
+            remote_path="${remote_prefix}${rel}"
+            remote_dir="$(dirname "$remote_path")"
+            local_file="dist/${rel}"
+
+            if [ "$remote_dir" != "." ]; then
+              IFS='/' read -r -a parts <<< "$remote_dir"
+              acc=""
+              for part in "${parts[@]}"; do
+                [ -z "$part" ] && continue
+                if [ -z "$acc" ]; then
+                  acc="$part"
+                else
+                  acc="$acc/$part"
+                fi
+                curl --silent --show-error --fail --user "$HOSTINGER_USERNAME:$HOSTINGER_PASSWORD" \
+                  --quote "MKD ${acc}" "$ftp_base" >/dev/null 2>&1 || true
+              done
+            fi
+
+            curl --silent --show-error --fail --user "$HOSTINGER_USERNAME:$HOSTINGER_PASSWORD" \
+              --upload-file "$local_file" "$ftp_base/${remote_path}"
+          done < <(cd dist && find . -type f -print | sed 's#^./##')
 
           if [ -n "$domain" ]; then
             echo "Verifying live domain response from https://${domain}/.deploy-check"

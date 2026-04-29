@@ -37,6 +37,8 @@ jobs:
 
       - name: Prepare Hostinger SPA artifacts
         run: |
+          printf '%s\n' "$GITHUB_SHA" > dist/.deploy-check
+
           cat > dist/.htaccess <<'EOF'
           <IfModule mod_rewrite.c>
             RewriteEngine On
@@ -189,3 +191,14 @@ jobs:
               bye
             "
           done
+
+          if [ -n "$domain" ]; then
+            echo "Verifying live domain response from https://${domain}/.deploy-check"
+            live_sha="$(curl -fsSL "https://${domain}/.deploy-check" || true)"
+            if [ "$live_sha" != "$GITHUB_SHA" ]; then
+              echo "::error::Post-deploy verification failed. Uploaded files did not reach the live document root for ${domain}."
+              echo "::error::Expected SHA: ${GITHUB_SHA}"
+              echo "::error::Live SHA: ${live_sha:-<empty>}"
+              exit 1
+            fi
+          fi

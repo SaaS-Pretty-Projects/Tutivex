@@ -1,59 +1,23 @@
 import {useEffect, useState} from 'react';
 import {getIdTokenResult} from 'firebase/auth';
-import {BarChart3, BookOpen, Globe, LogOut, Settings2, Sparkles, WalletCards} from 'lucide-react';
+import {BarChart3, BookOpen, Globe, LogOut, Plus, Settings2, Sparkles, WalletCards} from 'lucide-react';
 import {NavLink, Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {auth} from '../lib/firebase';
 import ThemeToggle from './ThemeToggle';
 
-const shellMeta: Record<string, {eyebrow: string; title: string; description: string}> = {
-  '/dashboard': {
-    eyebrow: 'Learning HQ',
-    title: 'Your focused learning workspace',
-    description: 'Track progress, continue active courses, and move through your mastery roadmap without leaving the flow.',
-  },
-  '/profile': {
-    eyebrow: 'Profile',
-    title: 'Shape the system around you',
-    description: 'Tune the preferences and cadence that personalize how Tutivex guides your deep work.',
-  },
-  '/credits': {
-    eyebrow: 'Credits',
-    title: 'Manage your learning balance',
-    description: 'Top up securely, review payment state, and keep lesson credits ready before the next session.',
-  },
-  '/tutor/earnings': {
-    eyebrow: 'Tutor Finance',
-    title: 'Track lessons and payouts',
-    description: 'Review earned balance, recent lesson ledger entries, and payout readiness.',
-  },
-  '/admin/aging': {
-    eyebrow: 'Finance Ops',
-    title: 'Monitor arrears and aging',
-    description: 'Review outstanding invoices, aging buckets, and finance operations from one workspace.',
-  },
-};
-
 export default function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const meta = shellMeta[location.pathname] ?? {
-    eyebrow: 'Course Flow',
-    title: 'Stay inside the session',
-    description: 'Move through the curriculum with less friction, clearer rituals, and stronger continuity between modules.',
-  };
 
   const user = auth.currentUser;
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'Learner';
   const [roles, setRoles] = useState({admin: false, tutor: false});
+  const isDashboard = location.pathname === '/dashboard';
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadRoles() {
-      if (!user) {
-        return;
-      }
-
+      if (!user) return;
       try {
         const token = await getIdTokenResult(user, true);
         if (!cancelled) {
@@ -66,122 +30,127 @@ export default function AppShell() {
         console.error('Failed to read navigation roles', error);
       }
     }
-
     loadRoles();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)] pointer-events-none" />
+    <div className="h-screen flex flex-col bg-black text-white overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-[20rem] bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.09),_transparent_60%)] pointer-events-none z-0" />
 
-      <header className="relative z-10 border-b border-white/8 backdrop-blur-md bg-black/65">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start justify-between gap-4">
+      {/* ── Compact single-row header ── */}
+      <header className="relative z-10 border-b border-white/8 backdrop-blur-md bg-black/70 shrink-0">
+        <div className="h-14 px-5 flex items-center gap-4">
+
+          {/* Logo */}
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2.5 shrink-0 mr-2"
+          >
+            <div className="w-8 h-8 rounded-xl liquid-glass border border-white/10 flex items-center justify-center">
+              <Globe className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-sm font-semibold tracking-tight hidden sm:block">Tutivex</span>
+          </button>
+
+          {/* Nav pills */}
+          <nav className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            <NavLink
+              to="/dashboard"
+              className={({isActive}) =>
+                `rounded-full px-3 py-1.5 text-xs font-medium transition-colors border whitespace-nowrap inline-flex items-center gap-1.5 ${
+                  isActive ? 'bg-white text-black border-white' : 'text-white/65 border-white/10 hover:text-white hover:border-white/25'
+                }`
+              }
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/profile"
+              className={({isActive}) =>
+                `rounded-full px-3 py-1.5 text-xs font-medium transition-colors border whitespace-nowrap inline-flex items-center gap-1.5 ${
+                  isActive ? 'bg-white text-black border-white' : 'text-white/65 border-white/10 hover:text-white hover:border-white/25'
+                }`
+              }
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              Profile
+            </NavLink>
+            {roles.tutor ? (
+              <NavLink
+                to="/tutor/earnings"
+                className={({isActive}) =>
+                  `rounded-full px-3 py-1.5 text-xs font-medium transition-colors border whitespace-nowrap inline-flex items-center gap-1.5 ${
+                    isActive ? 'bg-white text-black border-white' : 'text-white/65 border-white/10 hover:text-white hover:border-white/25'
+                  }`
+                }
+              >
+                <WalletCards className="w-3.5 h-3.5" />
+                Tutor
+              </NavLink>
+            ) : null}
+            {roles.admin ? (
+              <NavLink
+                to="/admin/aging"
+                className={({isActive}) =>
+                  `rounded-full px-3 py-1.5 text-xs font-medium transition-colors border whitespace-nowrap inline-flex items-center gap-1.5 ${
+                    isActive ? 'bg-white text-black border-white' : 'text-white/65 border-white/10 hover:text-white hover:border-white/25'
+                  }`
+                }
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                Admin
+              </NavLink>
+            ) : null}
+          </nav>
+
+          {/* Right controls */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Greeting (desktop only) */}
+            <span className="text-xs text-white/40 hidden lg:block mr-1">
+              {displayName}
+            </span>
+
+            {/* TOP UP — always visible, prominent */}
+            <NavLink
+              to="/credits"
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 text-black px-3.5 py-1.5 text-xs font-bold hover:bg-amber-300 transition-colors whitespace-nowrap"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Top Up
+            </NavLink>
+
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+
+            <ThemeToggle compact />
+
             <button
               type="button"
-              onClick={() => navigate('/')}
-              className="flex items-center gap-3 text-left"
+              onClick={() => auth.signOut()}
+              className="rounded-full p-1.5 text-white/50 border border-white/10 hover:text-white hover:border-white/25 transition-colors"
+              aria-label="Sign out"
             >
-              <div className="w-11 h-11 rounded-2xl liquid-glass border border-white/10 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.25em] text-white/45">{meta.eyebrow}</p>
-                <h1 className="text-xl md:text-2xl font-serif tracking-tight">{meta.title}</h1>
-              </div>
+              <LogOut className="w-3.5 h-3.5" />
             </button>
-          </div>
 
-          <div className="flex flex-col gap-4 lg:items-end">
-            <div className="flex flex-wrap items-center gap-2">
-              <NavLink
-                to="/dashboard"
-                className={({isActive}) =>
-                  `rounded-full px-4 py-2 text-sm transition-colors border ${
-                    isActive ? 'bg-white text-black border-white' : 'text-white/70 border-white/10 hover:text-white hover:border-white/25'
-                  }`
-                }
-              >
-                <span className="inline-flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Dashboard
-                </span>
-              </NavLink>
-              <NavLink
-                to="/profile"
-                className={({isActive}) =>
-                  `rounded-full px-4 py-2 text-sm transition-colors border ${
-                    isActive ? 'bg-white text-black border-white' : 'text-white/70 border-white/10 hover:text-white hover:border-white/25'
-                  }`
-                }
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Settings2 className="w-4 h-4" />
-                  Profile
-                </span>
-              </NavLink>
-              {roles.tutor ? (
-                <NavLink
-                  to="/tutor/earnings"
-                  className={({isActive}) =>
-                    `rounded-full px-4 py-2 text-sm transition-colors border ${
-                      isActive ? 'bg-white text-black border-white' : 'text-white/70 border-white/10 hover:text-white hover:border-white/25'
-                    }`
-                  }
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <WalletCards className="w-4 h-4" />
-                    Tutor
-                  </span>
-                </NavLink>
-              ) : null}
-              {roles.admin ? (
-                <NavLink
-                  to="/admin/aging"
-                  className={({isActive}) =>
-                    `rounded-full px-4 py-2 text-sm transition-colors border ${
-                      isActive ? 'bg-white text-black border-white' : 'text-white/70 border-white/10 hover:text-white hover:border-white/25'
-                    }`
-                  }
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
-                    Admin
-                  </span>
-                </NavLink>
-              ) : null}
-              <ThemeToggle compact />
-              <button
-                type="button"
-                onClick={() => auth.signOut()}
-                className="rounded-full px-4 py-2 text-sm text-white/70 border border-white/10 hover:text-white hover:border-white/25 transition-colors"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <LogOut className="w-4 h-4" />
-                  Sign out
-                </span>
-              </button>
-            </div>
-
-            <div className="flex items-start gap-3 text-right">
-              <div>
-                <p className="text-sm text-white/80">Welcome back, {displayName}.</p>
-                <p className="text-sm text-white/45 max-w-xl">{meta.description}</p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl liquid-glass border border-white/10 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white/70" />
-              </div>
+            <div className="w-7 h-7 rounded-xl liquid-glass border border-white/10 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-white/60" />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10 md:py-12">
-        <Outlet />
+      {/* ── Content area ── */}
+      <main className={`relative z-10 flex-1 min-h-0 ${isDashboard ? '' : 'overflow-y-auto'}`}>
+        {isDashboard ? (
+          <Outlet />
+        ) : (
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <Outlet />
+          </div>
+        )}
       </main>
     </div>
   );

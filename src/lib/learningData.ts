@@ -6,7 +6,7 @@ export interface MemberProfile {
   preferredSession: string;
 }
 
-export type StudioToolId = 'slides' | 'mindmap' | 'quiz' | 'flashcards' | 'guide' | 'cards';
+export type StudioToolId = 'slides' | 'mindmap' | 'quiz' | 'flashcards' | 'guide' | 'cards' | 'audio' | 'video' | 'report' | 'infographic' | 'datatable';
 export type FlashcardConfidence = 'new' | 'learning' | 'known';
 
 export interface QuizQuestion {

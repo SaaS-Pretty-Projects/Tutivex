@@ -15,6 +15,7 @@ import CreditsTopUp from './components/CreditsTopUp';
 import AdminAgingReport from './components/AdminAgingReport';
 import TutorEarningsDashboard from './components/TutorEarningsDashboard';
 import RoleGate from './components/RoleGate';
+import {ThemeProvider} from './lib/theme';
 
 function LandingPage() {
   return (
@@ -32,38 +33,40 @@ function LandingPage() {
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-black font-sans selection:bg-white/30 selection:text-white">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route element={<ProtectedRoute />}>
-            <Route element={<AppShell />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<ProfileSettings />} />
-              <Route path="/courses/:courseId" element={<CourseDetail />} />
-              <Route path="/credits" element={<CreditsTopUp />} />
-              <Route path="/checkout/success" element={<CreditsTopUp />} />
-              <Route path="/checkout/cancel" element={<CreditsTopUp />} />
-              <Route
-                path="/tutor/earnings"
-                element={
-                  <RoleGate requireTutor>
-                    <TutorEarningsDashboard />
-                  </RoleGate>
-                }
-              />
-              <Route
-                path="/admin/aging"
-                element={
-                  <RoleGate requireAdmin>
-                    <AdminAgingReport />
-                  </RoleGate>
-                }
-              />
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen bg-black font-sans selection:bg-white/30 selection:text-white">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppShell />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<ProfileSettings />} />
+                <Route path="/courses/:courseId" element={<CourseDetail />} />
+                <Route path="/credits" element={<CreditsTopUp />} />
+                <Route path="/checkout/success" element={<CreditsTopUp />} />
+                <Route path="/checkout/cancel" element={<CreditsTopUp />} />
+                <Route
+                  path="/tutor/earnings"
+                  element={
+                    <RoleGate requireTutor>
+                      <TutorEarningsDashboard />
+                    </RoleGate>
+                  }
+                />
+                <Route
+                  path="/admin/aging"
+                  element={
+                    <RoleGate requireAdmin>
+                      <AdminAgingReport />
+                    </RoleGate>
+                  }
+                />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
-      </div>
-    </Router>
+          </Routes>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }

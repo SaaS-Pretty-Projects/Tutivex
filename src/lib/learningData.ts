@@ -6,6 +6,37 @@ export interface MemberProfile {
   preferredSession: string;
 }
 
+export type StudioToolId = 'slides' | 'mindmap' | 'quiz' | 'flashcards' | 'guide' | 'cards';
+export type FlashcardConfidence = 'new' | 'learning' | 'known';
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+}
+
+export interface ModuleFlashcard {
+  id: string;
+  front: string;
+  back: string;
+}
+
+export interface ModuleSlide {
+  id: string;
+  title: string;
+  bullets: string[];
+}
+
+export interface StudyStudioState {
+  activeTool: StudioToolId;
+  quizAnswers: Record<string, number>;
+  flashcardConfidence: Record<string, FlashcardConfidence>;
+  slideIndexByModule: Record<string, number>;
+  mindMapFocusNodeId: string;
+}
+
 export interface CourseModule {
   id: string;
   title: string;
@@ -15,6 +46,12 @@ export interface CourseModule {
   videoUrl: string;
   outcomes: string[];
   resources: string[];
+  imageUrl?: string;
+  imageAlt?: string;
+  keyIdeas?: string[];
+  quiz?: QuizQuestion[];
+  flashcards?: ModuleFlashcard[];
+  slides?: ModuleSlide[];
 }
 
 export interface Course {
@@ -26,8 +63,18 @@ export interface Course {
   difficulty: string;
   durationMinutes: number;
   weeklyOutcome: string;
+  imageUrl?: string;
+  imageAlt?: string;
   modules: CourseModule[];
 }
+
+export const defaultStudyStudioState: StudyStudioState = {
+  activeTool: 'slides',
+  quizAnswers: {},
+  flashcardConfidence: {},
+  slideIndexByModule: {},
+  mindMapFocusNodeId: '',
+};
 
 export const defaultMemberProfile: MemberProfile = {
   displayName: '',
@@ -42,7 +89,21 @@ const focusVideo =
 const supportingVideoOne = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4';
 const supportingVideoTwo = 'https://www.w3schools.com/html/mov_bbb.mp4';
 
-export const courseCatalog: Course[] = [
+const courseImages: Record<string, string> = {
+  '101': 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=80',
+  '102': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80',
+  '103': 'https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1600&q=80',
+  '001': 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1600&q=80',
+};
+
+const moduleImages = [
+  'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1200&q=80',
+  'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=1200&q=80',
+];
+
+const baseCourseCatalog: Course[] = [
   {
     id: '101',
     title: 'The Foundations of Focus',
@@ -316,6 +377,98 @@ export const courseCatalog: Course[] = [
     ],
   },
 ];
+
+function buildQuiz(module: CourseModule): QuizQuestion[] {
+  const primaryOutcome = module.outcomes[0] ?? module.description;
+  const secondaryOutcome = module.outcomes[1] ?? module.ritual;
+  const resource = module.resources[0] ?? 'the module resource';
+
+  return [
+    {
+      id: `${module.id}-quiz-action`,
+      question: `Which action best supports "${module.title}"?`,
+      options: [
+        primaryOutcome,
+        'Open another topic before finishing the current one',
+        'Wait until the end of the week to record what happened',
+        'Skip the ritual and rely on motivation',
+      ],
+      correctOptionIndex: 0,
+      explanation: `The module is designed around this outcome: ${primaryOutcome}.`,
+    },
+    {
+      id: `${module.id}-quiz-resource`,
+      question: `Which resource should you use after this video?`,
+      options: [
+        resource,
+        secondaryOutcome,
+        'A blank browser tab',
+        'A new unrelated course',
+      ],
+      correctOptionIndex: 0,
+      explanation: `${resource} keeps the practice tied to the lesson instead of turning it into passive viewing.`,
+    },
+  ];
+}
+
+function buildFlashcards(module: CourseModule): ModuleFlashcard[] {
+  return [
+    {
+      id: `${module.id}-flash-ritual`,
+      front: `What ritual anchors ${module.title}?`,
+      back: module.ritual,
+    },
+    {
+      id: `${module.id}-flash-outcome`,
+      front: 'What should change after this module?',
+      back: module.outcomes[0] ?? module.description,
+    },
+    {
+      id: `${module.id}-flash-resource`,
+      front: 'What is the first follow-up resource?',
+      back: module.resources[0] ?? 'Review the module notes and write a next action.',
+    },
+  ];
+}
+
+function buildSlides(module: CourseModule, course: Course): ModuleSlide[] {
+  return [
+    {
+      id: `${module.id}-slide-context`,
+      title: module.title,
+      bullets: [module.description, `Track: ${course.track}`, `Session length: ${module.durationMinutes} minutes`],
+    },
+    {
+      id: `${module.id}-slide-practice`,
+      title: 'Practice frame',
+      bullets: [module.ritual, ...(module.outcomes.slice(0, 2))],
+    },
+    {
+      id: `${module.id}-slide-transfer`,
+      title: 'Carry it forward',
+      bullets: [course.weeklyOutcome, ...module.resources.slice(0, 2)],
+    },
+  ];
+}
+
+function enrichCourse(course: Course): Course {
+  return {
+    ...course,
+    imageUrl: course.imageUrl ?? courseImages[course.id] ?? moduleImages[0],
+    imageAlt: course.imageAlt ?? `${course.title} learning workspace`,
+    modules: course.modules.map((module, index) => ({
+      ...module,
+      imageUrl: module.imageUrl ?? moduleImages[index % moduleImages.length],
+      imageAlt: module.imageAlt ?? `${module.title} study workspace`,
+      keyIdeas: module.keyIdeas ?? [module.ritual, ...module.outcomes.slice(0, 3)],
+      quiz: module.quiz ?? buildQuiz(module),
+      flashcards: module.flashcards ?? buildFlashcards(module),
+      slides: module.slides ?? buildSlides(module, course),
+    })),
+  };
+}
+
+export const courseCatalog: Course[] = baseCourseCatalog.map(enrichCourse);
 
 export function getCourseById(courseId: string | undefined) {
   return courseCatalog.find((course) => course.id === courseId) ?? null;

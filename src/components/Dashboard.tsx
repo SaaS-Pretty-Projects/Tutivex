@@ -336,7 +336,12 @@ export default function Dashboard() {
               return (
                 <div key={course.id} className="rounded-[1.5rem] border border-white/8 bg-white/[0.02] p-5 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
-                    <div className="max-w-2xl">
+                    <img
+                      src={course.imageUrl}
+                      alt={course.imageAlt}
+                      className="w-full md:w-40 h-36 rounded-[1.25rem] object-cover border border-white/10"
+                    />
+                    <div className="max-w-2xl flex-1">
                       <div className="flex flex-wrap gap-2 mb-3">
                         <span className="text-[10px] uppercase tracking-[0.24em] text-white/45">{course.track}</span>
                         <span className="text-[10px] uppercase tracking-[0.24em] text-white/25">•</span>

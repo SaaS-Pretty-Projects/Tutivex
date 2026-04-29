@@ -70,6 +70,11 @@ service cloud.firestore {
         && notes.keys().size() <= 64;
     }
 
+    function isValidStudyStudio(studio) {
+      return studio is map
+        && studio.keys().size() <= 8;
+    }
+
     // Feature: Users
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
@@ -112,6 +117,7 @@ service cloud.firestore {
             'currentModuleId',
             'completedModuleIds',
             'moduleNotes',
+            'studyStudio',
             'status'
           ])
           && incoming().progress is number && incoming().progress >= 0 && incoming().progress <= 100
@@ -123,6 +129,7 @@ service cloud.firestore {
             || incoming().status == 'completed'
           )
           && isValidModuleNotes(incoming().get('moduleNotes', {}))
+          && isValidStudyStudio(incoming().get('studyStudio', {}))
           && incoming().lastAccessedAt == request.time
           && incoming().courseId == existing().courseId
           && incoming().courseName == existing().courseName

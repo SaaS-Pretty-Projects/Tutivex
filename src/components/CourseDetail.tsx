@@ -18,10 +18,13 @@ import {AnimatePresence, motion} from 'motion/react';
 import {auth, db, handleFirestoreError} from '../lib/firebase';
 import {
   calculateProgress,
+  defaultStudyStudioState,
   getCourseById,
   getCurrentModuleIndex,
   getNextModuleId,
+  type StudyStudioState,
 } from '../lib/learningData';
+import CourseStudio from './CourseStudio';
 
 interface EnrollmentRecord {
   id: string;
@@ -31,7 +34,34 @@ interface EnrollmentRecord {
   currentModuleId?: string;
   completedModuleIds?: string[];
   moduleNotes?: Record<string, string>;
+  studyStudio?: StudyStudioState;
   status?: 'not_started' | 'in_progress' | 'completed';
+}
+
+function normalizeStudyStudio(value: unknown): StudyStudioState {
+  if (!value || typeof value !== 'object') {
+    return defaultStudyStudioState;
+  }
+
+  const data = value as Partial<StudyStudioState>;
+  const activeTool = data.activeTool;
+
+  return {
+    activeTool:
+      activeTool === 'slides' ||
+      activeTool === 'mindmap' ||
+      activeTool === 'quiz' ||
+      activeTool === 'flashcards' ||
+      activeTool === 'guide' ||
+      activeTool === 'cards'
+        ? activeTool
+        : defaultStudyStudioState.activeTool,
+    quizAnswers: data.quizAnswers && typeof data.quizAnswers === 'object' ? data.quizAnswers : {},
+    flashcardConfidence:
+      data.flashcardConfidence && typeof data.flashcardConfidence === 'object' ? data.flashcardConfidence : {},
+    slideIndexByModule: data.slideIndexByModule && typeof data.slideIndexByModule === 'object' ? data.slideIndexByModule : {},
+    mindMapFocusNodeId: typeof data.mindMapFocusNodeId === 'string' ? data.mindMapFocusNodeId : '',
+  };
 }
 
 function resourceDetail(label: string) {
@@ -106,6 +136,7 @@ export default function CourseDetail() {
   const [updating, setUpdating] = useState(false);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
+  const [studyStudio, setStudyStudio] = useState<StudyStudioState>(defaultStudyStudioState);
   const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
@@ -151,6 +182,7 @@ export default function CourseDetail() {
         const currentModuleId = data.currentModuleId || getNextModuleId(course, completedModuleIds);
         const progress = data.progress ?? calculateProgress(course.modules.length, completedModuleIds);
         const moduleNotes = data.moduleNotes && typeof data.moduleNotes === 'object' ? data.moduleNotes : {};
+        const nextStudyStudio = normalizeStudyStudio(data.studyStudio);
         const moduleIndex = getCurrentModuleIndex(course, currentModuleId, completedModuleIds);
         const nextEnrollment: EnrollmentRecord = {
           id: enrollmentId,
@@ -160,10 +192,12 @@ export default function CourseDetail() {
           currentModuleId,
           completedModuleIds,
           moduleNotes,
+          studyStudio: nextStudyStudio,
           status: data.status ?? (progress >= 100 ? 'completed' : completedModuleIds.length > 0 ? 'in_progress' : 'not_started'),
         };
 
         setEnrollment(nextEnrollment);
+        setStudyStudio(nextStudyStudio);
         setActiveModuleIndex(moduleIndex);
         setNoteDraft(moduleNotes[course.modules[moduleIndex]?.id] ?? '');
       } catch (error) {
@@ -215,6 +249,22 @@ export default function CourseDetail() {
   const progress = enrollment.progress;
   const nextModuleId = getNextModuleId(course, completedModuleIds);
   const allComplete = progress >= 100;
+
+  const updateStudyStudio = (nextStudio: StudyStudioState) => {
+    setStudyStudio(nextStudio);
+    setEnrollment((current) => (current ? {...current, studyStudio: nextStudio} : current));
+
+    updateDoc(doc(db, `users/${user.uid}/enrollments`, enrollment.id), {
+      studyStudio: nextStudio,
+      lastAccessedAt: serverTimestamp(),
+    }).catch((error) => {
+      try {
+        handleFirestoreError(error, 'update', `users/${user.uid}/enrollments/${enrollment.id}`);
+      } catch (delegatedError) {
+        console.error('Failed to save studio state', delegatedError);
+      }
+    });
+  };
 
   const startModule = async (moduleIndex: number) => {
     const module = course.modules[moduleIndex];
@@ -409,6 +459,16 @@ export default function CourseDetail() {
           </div>
         </div>
       </section>
+
+      <CourseStudio
+        course={course}
+        currentModule={currentModule}
+        activeModuleIndex={activeModuleIndex}
+        completedModuleIds={completedModuleIds}
+        studio={studyStudio}
+        onStudioChange={updateStudyStudio}
+        onSelectModule={startModule}
+      />
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.2fr,0.8fr] gap-6">
         <div className="liquid-glass rounded-[2rem] p-6 md:p-7 border border-white/8">

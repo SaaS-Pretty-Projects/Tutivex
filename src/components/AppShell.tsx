@@ -3,6 +3,7 @@ import {getIdTokenResult} from 'firebase/auth';
 import {BarChart3, BookOpen, Globe, LogOut, Settings2, Sparkles, WalletCards} from 'lucide-react';
 import {NavLink, Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {auth} from '../lib/firebase';
+import ThemeToggle from './ThemeToggle';
 
 const shellMeta: Record<string, {eyebrow: string; title: string; description: string}> = {
   '/dashboard': {
@@ -153,6 +154,7 @@ export default function AppShell() {
                   </span>
                 </NavLink>
               ) : null}
+              <ThemeToggle compact />
               <button
                 type="button"
                 onClick={() => auth.signOut()}

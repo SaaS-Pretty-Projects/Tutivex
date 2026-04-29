@@ -1,5 +1,5 @@
 /**
- * Money primitives for Tutivex arrears.
+ * Money primitives for Teachenza arrears.
  *
  * Amounts are ALWAYS stored as integers in minor units (cents / pence).
  * Never use floating-point for money.

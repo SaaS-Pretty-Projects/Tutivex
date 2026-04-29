@@ -1,9 +1,10 @@
-const PREVIEW_SESSION_KEY = 'tutivex:localPreviewSession';
+const PREVIEW_SESSION_KEY = 'teachenza:localPreviewSession';
+const LEGACY_PREVIEW_SESSION_KEY = 'tutivex:localPreviewSession';
 
 export const previewUser = {
   uid: 'codex-local-preview',
   displayName: 'Codex Preview',
-  email: 'preview@tutivex.local',
+  email: 'preview@teachenza.local',
 };
 
 export function canUseLocalPreview() {
@@ -19,13 +20,18 @@ export function canUseLocalPreview() {
 export function enableLocalPreview() {
   if (!canUseLocalPreview()) return false;
   localStorage.setItem(PREVIEW_SESSION_KEY, '1');
+  localStorage.setItem(LEGACY_PREVIEW_SESSION_KEY, '1');
   return true;
 }
 
 export function disableLocalPreview() {
   localStorage.removeItem(PREVIEW_SESSION_KEY);
+  localStorage.removeItem(LEGACY_PREVIEW_SESSION_KEY);
 }
 
 export function isLocalPreviewEnabled() {
-  return canUseLocalPreview() && localStorage.getItem(PREVIEW_SESSION_KEY) === '1';
+  return canUseLocalPreview() && (
+    localStorage.getItem(PREVIEW_SESSION_KEY) === '1' ||
+    localStorage.getItem(LEGACY_PREVIEW_SESSION_KEY) === '1'
+  );
 }

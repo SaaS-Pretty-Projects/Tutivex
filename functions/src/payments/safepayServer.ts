@@ -1,5 +1,5 @@
 /**
- * SafePay server-side helpers for Tutivex Cloud Functions.
+ * SafePay server-side helpers for Teachenza Cloud Functions.
  *
  * Ported / reconstructed from:
  *   cloudbase/shared/payments/safepay-server.js (MD5 signing + response parsing)

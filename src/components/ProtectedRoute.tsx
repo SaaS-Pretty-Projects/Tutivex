@@ -21,7 +21,7 @@ export default function ProtectedRoute() {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
         <div className="liquid-glass rounded-3xl px-8 py-6 text-center border border-white/10">
-          <p className="text-sm uppercase tracking-[0.25em] text-white/45 mb-3">Tutivex</p>
+          <p className="text-sm uppercase tracking-[0.25em] text-white/45 mb-3">Teachenza</p>
           <p className="text-white/80">Preparing your workspace...</p>
         </div>
       </div>

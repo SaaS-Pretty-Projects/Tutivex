@@ -120,7 +120,7 @@ export default function ProfileSettings() {
               value={profile.displayName}
               onChange={(event) => setProfile((current) => ({...current, displayName: event.target.value}))}
               className="w-full rounded-2xl bg-white/[0.04] border border-white/10 px-4 py-4 text-white outline-none focus:border-white/25"
-              placeholder="How should Tutivex address you?"
+              placeholder="How should Teachenza address you?"
             />
           </label>
 

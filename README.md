@@ -2,41 +2,71 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Teachenza
 
-This contains everything you need to run your app locally.
+Universal online learning platform — connects students with expert tutors for personalised, one-on-one education.
 
-View your app in AI Studio: https://ai.studio/apps/0e73c385-eb8b-44ad-8d0b-940e22df006d
+Live at **[teachenza.com](https://teachenza.com)**
 
-## Run Locally
+## Tech stack
 
-**Prerequisites:**  Node.js
+- **React 19 + Vite 6 + TypeScript** — SPA frontend
+- **Tailwind CSS v4** — utility-first styling with dark/light theme
+- **Firebase** (Auth, Firestore, Cloud Functions, Storage) — backend
+- **SafePay** — payments and credit top-ups
+- **Hostinger** — production hosting via SFTP deploy
 
+## Run locally
+
+**Prerequisites:** Node.js 22+
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+   ```sh
+   npm install
+   ```
+2. Copy `.env.example` to `.env.local` and fill in your Firebase credentials
+3. Start the dev server:
+   ```sh
+   npm run dev
+   ```
 
-## Auto Deploy To Hostinger
+The app runs at `http://localhost:3000`. Use the local preview mode (no Google OAuth required) to explore the dashboard without signing in.
 
-The repo deploys to Hostinger from GitHub Actions on pushes to `main`.
+## Firebase Cloud Functions
 
-Add these GitHub Actions secrets in `Settings -> Secrets and variables -> Actions`:
+```sh
+cd functions
+npm install
+npm run build
+```
 
-- `HOSTINGER_HOST`: only the bare FTP/SFTP hostname or IP
-- `HOSTINGER_USERNAME`: your Hostinger FTP or SSH username
-- `HOSTINGER_PASSWORD`: your Hostinger FTP or SSH password
-- `HOSTINGER_SERVER_DIR`: optional, defaults to `public_html`
-- `HOSTINGER_PROTOCOL`: optional, defaults to `sftp`
-- `HOSTINGER_PORT`: optional, defaults to `65002` for `sftp` and `21` for `ftp`
+Deploy rules and functions:
+```sh
+npm run firebase:deploy:rules
+npm run firebase:deploy:functions
+```
 
-The workflow:
+## Deploy to Hostinger
 
-1. builds the Vite app
-2. writes a Hostinger-compatible SPA `.htaccess` fallback
-3. removes files from the previous deployed build via a manifest
-4. uploads the new `dist/` contents
+The repo deploys automatically to Hostinger via GitHub Actions on every push to `main`.
+
+Add these secrets under **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|---|---|
+| `HOSTINGER_HOST` | Bare FTP/SFTP hostname or IP |
+| `HOSTINGER_USERNAME` | FTP or SSH username |
+| `HOSTINGER_PASSWORD` | FTP or SSH password |
+| `HOSTINGER_SERVER_DIR` | Optional override. If omitted, deploy defaults to `domains/teachenza.com/public_html` |
+| `HOSTINGER_PROTOCOL` | Optional — defaults to `sftp` |
+| `HOSTINGER_PORT` | Optional — defaults to `65002` (sftp) or `21` (ftp) |
+
+The workflow: checks out → installs → builds → writes SPA `.htaccess` → diffs against the deploy manifest → uploads only changed files.
+
+Recommended Hostinger values for this project:
+
+- `HOSTINGER_PROTOCOL=sftp`
+- `HOSTINGER_PORT=65002`
+- `HOSTINGER_SERVER_DIR=domains/teachenza.com/public_html` (set this explicitly if your account layout differs)
 
 If you reconnect or publish this repository through a GitHub dialog, switch the target organization from `wysRocket` to `SaaS-Pretty-Projects`.

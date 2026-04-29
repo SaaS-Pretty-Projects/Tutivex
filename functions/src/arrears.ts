@@ -114,7 +114,7 @@ export async function createSafepayPaymentSession(data: {
 
     amountMinor = arrearsInvoice.amountMinor;
     currency = arrearsInvoice.currency;
-    description = `Tutivex invoice payment ${invoiceId}`;
+    description = `Teachenza invoice payment ${invoiceId}`;
   }
 
   const merchantId = requireEnv('SAFEPAY_MERCHANT_ID');

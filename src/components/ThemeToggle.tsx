@@ -8,14 +8,19 @@ const MODE_META: Record<ThemeMode, {label: string; Icon: typeof Monitor}> = {
 };
 
 export default function ThemeToggle({compact = false}: {compact?: boolean}) {
-  const {mode, cycleMode} = useTheme();
+  const {mode, cycleMode, resolvedTheme} = useTheme();
   const {label, Icon} = MODE_META[mode];
+  const isLight = resolvedTheme === 'light';
 
   return (
     <button
       type="button"
       onClick={cycleMode}
-      className="rounded-full px-3 py-2 text-sm border border-white/10 text-white/75 hover:text-white hover:border-white/25 transition-colors inline-flex items-center gap-2"
+      className={`rounded-full px-2.5 py-1.5 text-sm border transition-colors inline-flex items-center gap-2 ${
+        isLight
+          ? 'border-black/12 text-[var(--text-secondary)] hover:text-[var(--text-strong)] hover:border-black/20'
+          : 'border-white/10 text-white/75 hover:text-white hover:border-white/25'
+      }`}
       aria-label={`Theme: ${label}. Click to switch theme.`}
       title={`Theme: ${label}`}
     >

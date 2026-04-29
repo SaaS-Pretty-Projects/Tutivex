@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {ArrowRight, Globe} from 'lucide-react';
 import {auth, db} from '../lib/firebase';
 import {getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut} from 'firebase/auth';
@@ -19,7 +19,7 @@ export default function HeroSection() {
     return auth.onAuthStateChanged(setUser);
   }, []);
 
-  const upsertUserProfile = async (signedInUser: NonNullable<typeof auth.currentUser>) => {
+  const upsertUserProfile = useCallback(async (signedInUser: NonNullable<typeof auth.currentUser>) => {
     const userRef = doc(db, 'users', signedInUser.uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
@@ -33,7 +33,7 @@ export default function HeroSection() {
         createdAt: serverTimestamp(),
       });
     }
-  };
+  }, []);
 
   const provider = () => {
     const googleProvider = new GoogleAuthProvider();
@@ -41,11 +41,12 @@ export default function HeroSection() {
     return googleProvider;
   };
 
-  const resumeAfterLogin = () => {
-    const nextPath = localStorage.getItem('tutivex:postLoginPath') || '/dashboard';
+  const resumeAfterLogin = useCallback(() => {
+    const nextPath = localStorage.getItem('teachenza:postLoginPath') || localStorage.getItem('tutivex:postLoginPath') || '/dashboard';
+    localStorage.removeItem('teachenza:postLoginPath');
     localStorage.removeItem('tutivex:postLoginPath');
     navigate(nextPath);
-  };
+  }, [navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,7 +59,7 @@ export default function HeroSection() {
         if (result?.user) {
           await upsertUserProfile(result.user);
           if (!cancelled) resumeAfterLogin();
-        } else if (auth.currentUser && localStorage.getItem('tutivex:postLoginPath')) {
+        } else if (auth.currentUser && (localStorage.getItem('teachenza:postLoginPath') || localStorage.getItem('tutivex:postLoginPath'))) {
           await upsertUserProfile(auth.currentUser);
           if (!cancelled) resumeAfterLogin();
         }
@@ -72,9 +73,10 @@ export default function HeroSection() {
 
     completeRedirectLogin();
     return () => { cancelled = true; };
-  }, []);
+  }, [resumeAfterLogin, upsertUserProfile]);
 
   const startRedirectLogin = () => {
+    localStorage.setItem('teachenza:postLoginPath', '/dashboard');
     localStorage.setItem('tutivex:postLoginPath', '/dashboard');
     setLoginMessage('Opening Google sign-in in this browser...');
     window.setTimeout(() => {
@@ -213,8 +215,7 @@ export default function HeroSection() {
         autoPlay
         playsInline
         preload="auto"
-        className="absolute inset-0 w-full h-full object-cover object-bottom"
-        style={{ opacity: 0 }}
+        className="absolute inset-0 w-full h-full object-cover object-bottom opacity-0"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black z-[1]"></div>
       
@@ -223,7 +224,7 @@ export default function HeroSection() {
         <div className="liquid-glass rounded-full max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center">
             <Globe className="w-6 h-6 text-white" />
-            <span className="text-white font-semibold text-lg ml-2">Tutivex</span>
+            <span className="text-white font-semibold text-lg ml-2">Teachenza</span>
             
             <div className="hidden md:flex items-center gap-8 ml-10">
               <a href="#courses" className="text-white/80 hover:text-white text-sm font-medium transition-colors">Courses</a>
@@ -236,8 +237,8 @@ export default function HeroSection() {
             {user ? (
               <>
                 <span className="hidden md:block text-white text-sm opacity-60">Hi, {user.displayName || user.email?.split('@')[0]}</span>
-                <button onClick={() => navigate('/dashboard')} className="text-white text-sm font-medium hover:text-white/80 transition-colors">Dashboard</button>
-                <button onClick={handleLogout} className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium transition-all hover:bg-white/10">Log Out</button>
+                <button type="button" onClick={() => navigate('/dashboard')} className="text-white text-sm font-medium hover:text-white/80 transition-colors">Dashboard</button>
+                <button type="button" onClick={handleLogout} className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium transition-all hover:bg-white/10">Log Out</button>
               </>
             ) : (
               <>
@@ -270,7 +271,7 @@ export default function HeroSection() {
           Deep, focused <em className="italic font-serif text-white/90">learning</em>.
         </h1>
         <p className="max-w-3xl text-white/65 text-base md:text-lg leading-relaxed mb-8">
-          Tutivex now carries the learning experience beyond the landing page with a real internal workspace:
+          Teachenza now carries the learning experience beyond the landing page with a real internal workspace:
           active roadmaps, progress-aware curriculum, and a profile that shapes how your sessions unfold.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">

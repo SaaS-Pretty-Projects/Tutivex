@@ -261,7 +261,7 @@ export default function CourseDetail() {
           </h2>
           <p className="text-white/62 leading-relaxed mb-6">
             {missingEnrollment
-              ? 'Return to the dashboard and start the track again so Tutivex can create the enrollment record.'
+              ? 'Return to the dashboard and start the track again so Teachenza can create the enrollment record.'
               : loadError}
           </p>
           <button

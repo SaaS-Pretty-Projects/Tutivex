@@ -1,7 +1,7 @@
-# STITCH Prompt — Tutivex
+# STITCH Prompt — Teachenza
 
 ## Product Context
-Tutivex is an innovative online tutoring platform that connects students with expert educators for personalized, one-on-one learning experiences. It aims to make high-quality, flexible education accessible globally, empowering students to achieve their learning goals and tutors to build thriving teaching practices.
+Teachenza is an innovative online tutoring platform that connects students with expert educators for personalized, one-on-one learning experiences. It aims to make high-quality, flexible education accessible globally, empowering students to achieve their learning goals and tutors to build thriving teaching practices.
 
 ## Design Style
 Style: Modern Professional with Engaging Accents
@@ -32,7 +32,7 @@ Visual: A large, abstract illustration on the right side, featuring interconnect
 
 ### How It Works Section
 Headline: "Your Path to Mastery, Simplified."
-Subheadline: "Getting started with Tutivex is easy. Here's how."
+Subheadline: "Getting started with Teachenza is easy. Here's how."
 Layout: Three feature cards arranged horizontally in a grid, each with an icon, title, and description.
 Content:
 1.  **Find Your Expert**: "Browse profiles, filter by subject, price, and availability. Watch intro videos and read reviews to find your perfect match."
@@ -40,8 +40,8 @@ Content:
 3.  **Learn & Grow**: "Engage in our interactive virtual classroom with video, chat, and whiteboard. Personalized learning, real results."
 Visual: Each card features a modern, minimalist icon (e.g., magnifying glass, calendar, video camera) in `#ff7aac` or `#99c5ff`. Cards have a `#384047` background.
 
-### Why Choose Tutivex Section
-Headline: "Why Tutivex?"
+### Why Choose Teachenza Section
+Headline: "Why Teachenza?"
 Subheadline: "Unlocking your potential with unparalleled support and flexibility."
 Layout: A 2x2 grid of feature cards.
 Content:
@@ -53,15 +53,15 @@ Visual: Each card has a small, relevant icon (e.g., graduation cap, lightbulb, c
 
 ### Testimonials Section
 Headline: "Hear From Our Learners"
-Subheadline: "Real stories from students who mastered their potential with Tutivex."
+Subheadline: "Real stories from students who mastered their potential with Teachenza."
 Layout: A horizontal carousel displaying 3-4 testimonial cards.
 Content: Each card includes a circular student profile image, student's name, subject studied, and a compelling quote.
-Example: "Tutivex helped me ace my advanced calculus exam! Anya was incredibly patient and explained complex concepts clearly. Highly recommend!" - Anya Sharma, University Student
+Example: "Teachenza helped me ace my advanced calculus exam! Anya was incredibly patient and explained complex concepts clearly. Highly recommend!" - Anya Sharma, University Student
 Visual: Circular profile images. Quotes in a slightly larger font. Cards have a `#384047` background.
 
 ### Call to Action Section (Bottom)
 Headline: "Ready to Master Your Potential?"
-Subheadline: "Join Tutivex today and start your personalized learning journey."
+Subheadline: "Join Teachenza today and start your personalized learning journey."
 CTA: "Get Started as a Student" (Primary button), "Become a Tutor" (Secondary button)
 Visual: Clean, dark background with a subtle, abstract graphic element (e.g., a faint `#ff7aac` wave or line) in the background.
 
@@ -72,7 +72,7 @@ The page features a two-column layout. A fixed-width left sidebar for navigation
 
 ### Header
 Layout: Full-width, sticky at the top.
-Content: Tutivex logo (left), "Welcome, Anya!" (center), Profile dropdown (with "My Profile", "Settings", "Logout"), and a "Find Tutors" button (Primary style) on the right.
+Content: Teachenza logo (left), "Welcome, Anya!" (center), Profile dropdown (with "My Profile", "Settings", "Logout"), and a "Find Tutors" button (Primary style) on the right.
 Visual: Background `#121117`, text `#ffffff`.
 
 ### Sidebar Navigation

@@ -66,7 +66,7 @@ export default function RoleGate({requireAdmin = false, requireTutor = false, ch
           <p className="text-[11px] uppercase tracking-[0.24em] text-white/40 mb-4">Restricted workspace</p>
           <h2 className="text-3xl font-serif mb-4">This area needs another role</h2>
           <p className="text-white/62 leading-relaxed mb-6">
-            Ask an admin to refresh your Tutivex role if you should have access here.
+            Ask an admin to refresh your Teachenza role if you should have access here.
           </p>
           <Link
             to="/dashboard"

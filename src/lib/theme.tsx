@@ -10,12 +10,13 @@ interface ThemeContextValue {
   cycleMode: () => void;
 }
 
-const STORAGE_KEY = 'tutivex.theme';
+const STORAGE_KEY = 'teachenza.theme';
+const LEGACY_STORAGE_KEY = 'tutivex.theme';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredMode(): ThemeMode {
   if (typeof window === 'undefined') return 'system';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
   return stored === 'dark' || stored === 'light' || stored === 'system' ? stored : 'system';
 }
 
@@ -50,6 +51,7 @@ export function ThemeProvider({children}: {children: ReactNode}) {
     const setMode = (nextMode: ThemeMode) => {
       setModeState(nextMode);
       window.localStorage.setItem(STORAGE_KEY, nextMode);
+      window.localStorage.setItem(LEGACY_STORAGE_KEY, nextMode);
     };
 
     const cycleMode = () => {

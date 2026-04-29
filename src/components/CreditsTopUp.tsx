@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {collection, doc, getDoc, getDocs, limit, query, where} from 'firebase/firestore';
 import {httpsCallable} from 'firebase/functions';
@@ -40,7 +40,7 @@ interface RefreshStatusResponse {
 function splitName(displayName: string | null | undefined) {
   const parts = (displayName || '').trim().split(/\s+/).filter(Boolean);
   return {
-    firstName: parts[0] || 'Tutivex',
+    firstName: parts[0] || 'Teachenza',
     lastName: parts.slice(1).join(' ') || 'Learner',
   };
 }
@@ -62,10 +62,10 @@ function formatDate(value: unknown) {
 export default function CreditsTopUp() {
   const location = useLocation();
   const user = auth.currentUser;
-  const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
-  const returnedInvoice = query.get('invoice') || sessionStorage.getItem('tutivex.pendingSafepayInvoice') || '';
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const returnedInvoice = searchParams.get('invoice') || sessionStorage.getItem('teachenza.pendingSafepayInvoice') || sessionStorage.getItem('tutivex.pendingSafepayInvoice') || '';
   const returnedFromCheckout = location.pathname.startsWith('/checkout/');
-  const initialCurrency = query.get('currency') === 'GBP' ? 'GBP' : 'EUR';
+  const initialCurrency = searchParams.get('currency') === 'GBP' ? 'GBP' : 'EUR';
   const defaultName = splitName(user?.displayName);
 
   const [currency, setCurrency] = useState<Currency>(initialCurrency);
@@ -73,7 +73,7 @@ export default function CreditsTopUp() {
   const [balance, setBalance] = useState<StudentBalance | null>(null);
   const [paymentOrders, setPaymentOrders] = useState<PaymentOrder[]>([]);
   const [openInvoices, setOpenInvoices] = useState<ArrearsInvoice[]>([]);
-  const [invoice, setInvoice] = useState(returnedInvoice);
+  const invoice = returnedInvoice;
   const [status, setStatus] = useState<CheckoutStatus>(returnedFromCheckout ? 'checking' : 'idle');
   const [message, setMessage] = useState<string | null>(null);
   const [customer, setCustomer] = useState({
@@ -85,7 +85,7 @@ export default function CreditsTopUp() {
     city: '',
   });
 
-  const refreshInvoiceStatus = async (invoiceToRefresh: string) => {
+  const refreshInvoiceStatus = useCallback(async (invoiceToRefresh: string) => {
     const refreshStatus = httpsCallable<{invoice: string}, RefreshStatusResponse>(functions, 'refreshSafepayStatus');
 
     setStatus('checking');
@@ -95,6 +95,7 @@ export default function CreditsTopUp() {
       const result = await refreshStatus({invoice: invoiceToRefresh});
 
       if (result.data.status === 'completed' && result.data.creditAppliedAt) {
+        sessionStorage.removeItem('teachenza.pendingSafepayInvoice');
         sessionStorage.removeItem('tutivex.pendingSafepayInvoice');
         setStatus('completed');
         setMessage('Payment confirmed. The backend ledger has applied the settled SafePay payment.');
@@ -120,7 +121,7 @@ export default function CreditsTopUp() {
       setMessage('Could not refresh payment status. Try again in a moment.');
       return 'failed';
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -162,7 +163,7 @@ export default function CreditsTopUp() {
     }
 
     loadMoneySnapshot();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     if (!returnedFromCheckout || !invoice) {
@@ -186,7 +187,7 @@ export default function CreditsTopUp() {
     return () => {
       cancelled = true;
     };
-  }, [invoice, returnedFromCheckout]);
+  }, [invoice, refreshInvoiceStatus, returnedFromCheckout]);
 
   const selectedMinorAmount = amountMajorToMinor(amountMajor, currency);
   const balanceForCurrency = balance?.byCurrency?.[currency];
@@ -214,11 +215,12 @@ export default function CreditsTopUp() {
       const result = await createSession({
         amountMinor: selectedMinorAmount,
         currency,
-        description: `${formatMinorAmount(selectedMinorAmount, currency)} Tutivex credit top-up`,
+        description: `${formatMinorAmount(selectedMinorAmount, currency)} Teachenza credit top-up`,
         purpose: 'credit_topup',
         customer,
       });
 
+      sessionStorage.setItem('teachenza.pendingSafepayInvoice', result.data.invoice);
       sessionStorage.setItem('tutivex.pendingSafepayInvoice', result.data.invoice);
       window.location.assign(result.data.checkoutUrl);
     } catch (error) {
@@ -251,12 +253,13 @@ export default function CreditsTopUp() {
       const result = await createSession({
         amountMinor: arrearsInvoice.amountMinor,
         currency: arrearsInvoice.currency,
-        description: `Tutivex invoice payment ${arrearsInvoice.id}`,
+        description: `Teachenza invoice payment ${arrearsInvoice.id}`,
         purpose: 'invoice_payment',
         invoiceId: arrearsInvoice.id,
         customer,
       });
 
+      sessionStorage.setItem('teachenza.pendingSafepayInvoice', result.data.invoice);
       sessionStorage.setItem('tutivex.pendingSafepayInvoice', result.data.invoice);
       window.location.assign(result.data.checkoutUrl);
     } catch (error) {

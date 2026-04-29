@@ -1,12 +1,12 @@
 ---
 
 ## [EN] Summary
-Tutivex is an innovative online tutoring platform designed to connect students with expert educators for personalized, one-on-one learning experiences across a wide range of academic subjects and skills. Leveraging advanced matching algorithms and interactive virtual classrooms, Tutivex aims to make high-quality, flexible education accessible globally, empowering students to achieve their learning goals and tutors to build thriving teaching practices.
+Teachenza is a universal online learning platform designed to give learners access to courses across many subjects in one place. It focuses on practical outcomes, flexible study paths, and a consistent learning experience that scales from single-skill goals to long-term upskilling.
 
 ## Brand
-Name: Tutivex
-Domain: tutivex.com
-Tagline: Master Your Potential. Learn with the Best.
+Name: Teachenza
+Domain: teachenza.com
+Tagline: Learn More, In One Place.
 
 ## MVP Scope
 In scope for v1:

@@ -1,5 +1,5 @@
 /**
- * Firestore document interfaces for the Tutivex arrears ledger.
+ * Firestore document interfaces for the Teachenza arrears ledger.
  *
  * All amounts are in minor units (integer). Never floats. Never aggregate
  * across currencies without an explicit FX snapshot.

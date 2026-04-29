@@ -1,4 +1,4 @@
-# Tutivex Arrears — Data Model & Ledger Primitives
+# Teachenza Arrears — Data Model & Ledger Primitives
 
 **Status:** Draft v1 · **Owner:** TBD · **Date:** 2026-04-28
 **Scope:** Firestore-only data model, ledger transitions, SafePay integration primitives, EUR/GBP support.
@@ -11,7 +11,7 @@
 ### Functional
 
 1. Record every lesson's gross earnings, platform commission, and tutor net at lesson completion.
-2. Track each student's outstanding balance (what they owe Tutivex) and credit balance (prepaid lessons).
+2. Track each student's outstanding balance (what they owe Teachenza) and credit balance (prepaid lessons).
 3. Issue invoices when a student's outstanding crosses a threshold (or per booking, depending on plan).
 4. Drive a student's invoice through states: `pending → processing → completed | failed | manual_review | overdue | written_off`.
 5. Apply credits to a student exactly once per successful SafePay payment (no double-credit on retry/poll).
@@ -141,7 +141,7 @@ export interface Money {
 // Reuse luxuryui's catalog math:
 //   amountMajorToMinor, formatMinorAmount, classifyPaymentState
 // Copy /Users/wysmyfree/Projects/luxuryui/shared/payments/catalog.js
-// into Tutivex unchanged. It is small, well-tested, and authoritative.
+// into Teachenza unchanged. It is small, well-tested, and authoritative.
 ```
 
 **Rule:** every money field on every document is the pair `(amountMinor: number, currency: Currency)`. Never store a single `amount` without its currency. Never aggregate across currencies without an explicit FX snapshot.
@@ -463,7 +463,7 @@ Two of three (with a passing test suite in cloudbase) say `status_id === 1` is t
 - Be using a different SafePay product variant or merchant account configuration.
 - Have a bug that's been masked because the dev/test invoices coincidentally returned 10/11.
 
-**Recommendation for Tutivex:**
+**Recommendation for Teachenza:**
 1. Adopt the **luxuryui + cloudbase** mapping as the default (it's test-covered).
 2. **Email SafePay merchant support** before going live to confirm the canonical `status_id` table for your specific merchant account.
 3. Until confirmed, treat `status_id === 1` as the only success signal AND log every observed `(status_id, payment_system_status)` pair to the audit log so we can build an empirical mapping from real production data.
@@ -544,7 +544,7 @@ Enable Firestore **Point-in-Time Recovery** (PITR) — required for any system t
 | Cost at scale | Per-read pricing — projections become essential | Predictable per-instance |
 | Drift detection | Manual (we wrote a reconciliation job) | Same |
 
-**Recommendation:** Firestore is fine for **v1** with disciplined use of deterministic doc IDs and transactions. **If** Tutivex grows past ~10k paying students or finance asks for any non-trivial reporting, expect to migrate the ledger to Postgres. Design the projection layer (`student_balances`, `tutor_earnings_summary`) as **derived state** so a future migration replaces the source-of-truth without rewriting the UI.
+**Recommendation:** Firestore is fine for **v1** with disciplined use of deterministic doc IDs and transactions. **If** Teachenza grows past ~10k paying students or finance asks for any non-trivial reporting, expect to migrate the ledger to Postgres. Design the projection layer (`student_balances`, `tutor_earnings_summary`) as **derived state** so a future migration replaces the source-of-truth without rewriting the UI.
 
 ### IPN webhook + polling fallback (vs. polling-only)
 
@@ -611,9 +611,9 @@ Per-currency adds complexity to UI ("you owe €40 and have £12 credit") but av
 - The Firebase callable wrappers (`createSafepayPaymentSession`, `refreshSafepayStatus`) port directly — replace the Supabase admin client with Firestore admin SDK and adapt the ledger writes to the schema above.
 - The `sessionStorage` pending-checkout helper in `services/safepayService.ts`.
 
-## Appendix B — Differences across reference projects (and Tutivex's choice)
+## Appendix B — Differences across reference projects (and Teachenza's choice)
 
-| Concern | luxuryui | cloudbase | cookflow | Tutivex (chosen) |
+| Concern | luxuryui | cloudbase | cookflow | Teachenza (chosen) |
 |---|---|---|---|---|
 | Storage | Supabase Postgres | Supabase Postgres | Cloudflare KV (TTL) | **Firestore** |
 | Backend runtime | Firebase Functions | Supabase Edge Functions (Deno) | Cloudflare Workers | **Firebase Functions** |
@@ -623,5 +623,5 @@ Per-currency adds complexity to UI ("you owe €40 and have £12 credit") but av
 | Tests for shared payments lib | No | **Yes** ✓ | No | Port from cloudbase |
 | `success_url`/`cancel_url` | Not set | Not set | **Set** | Adopt from cookflow |
 | Purpose of payments | Credit top-up only | Credit top-up only | Credit top-up only | **Invoice payment + credit top-up** |
-| Currency mapping to in-app credits | `creditsPerMajorUnit` (EUR=100, GBP=117) | Same | Same | N/A — Tutivex bills in real money |
+| Currency mapping to in-app credits | `creditsPerMajorUnit` (EUR=100, GBP=117) | Same | Same | N/A — Teachenza bills in real money |
 | `sessionStorage` pending-checkout helper | Yes | Yes (similar) | No | Adopt from luxuryui |

@@ -21,7 +21,9 @@ service cloud.firestore {
     }
     
     function isValidId(id) { 
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+      // Firestore IDs cannot include '/'; allow other characters to avoid
+      // rejecting provider-generated auth UIDs and external invoice IDs.
+      return id is string && id.size() > 0 && id.size() <= 128 && !id.matches('.*\/.*'); 
     }
 
     // Entity Validation Helpers
@@ -34,14 +36,14 @@ service cloud.firestore {
         && (data.get('experienceLevel', '') is string && data.get('experienceLevel', '').size() <= 64)
         && (data.get('weeklyCommitment', '') is string && data.get('weeklyCommitment', '').size() <= 64)
         && (data.get('preferredSession', '') is string && data.get('preferredSession', '').size() <= 96)
-        && data.createdAt == request.time;
+        && data.createdAt is timestamp;
     }
 
     function isValidSubscription(data) {
       return data.keys().hasAll(['email', 'createdAt'])
         && data.keys().size() == 2
         && data.email is string && data.email.size() <= 256
-        && data.createdAt == request.time;
+        && data.createdAt is timestamp;
     }
 
     function isValidEnrollment(data) {
@@ -61,8 +63,8 @@ service cloud.firestore {
           || data.status == 'in_progress'
           || data.status == 'completed'
         )
-        && data.lastAccessedAt == request.time
-        && data.enrolledAt == request.time;
+        && data.lastAccessedAt is timestamp
+        && data.enrolledAt is timestamp;
     }
 
     function isValidModuleNotes(notes) {

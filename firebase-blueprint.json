@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "A user of the Tutivex platform",
+      "description": "A user of the Teachenza platform",
       "type": "object",
       "properties": {
         "email": {

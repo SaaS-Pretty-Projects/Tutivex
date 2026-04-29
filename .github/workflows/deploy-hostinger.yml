@@ -166,23 +166,26 @@ jobs:
 
           for deploy_dir in "${candidate_dirs[@]}"; do
             echo "Deploying build into candidate webroot: ${deploy_dir}"
-            lftp -u "$HOSTINGER_USERNAME","$HOSTINGER_PASSWORD" "${protocol}://${host}:${port}" <<EOF
-          set cmd:fail-exit yes
-          set net:max-retries 5
-          set net:timeout 30
-          set net:reconnect-interval-base 5
-          set sftp:auto-confirm yes
-          set ssl:verify-certificate no
-          set ftp:ssl-allow no
-          set ftp:passive-mode yes
-          $([ "$deploy_dir" != "." ] && echo "mkdir -p ${deploy_dir}")
-          $([ "$deploy_dir" != "." ] && echo "cd ${deploy_dir}")
-          # Remove Hostinger placeholder entry files so SPA index.html is served.
-          set cmd:fail-exit no
-          rm index.php
-          rm default.php
-          set cmd:fail-exit yes
-          mirror --reverse --verbose --parallel=2 dist/ .
-          bye
-EOF
+            cd_commands=""
+            if [ "$deploy_dir" != "." ]; then
+              cd_commands="mkdir -p ${deploy_dir}; cd ${deploy_dir};"
+            fi
+
+            lftp -u "$HOSTINGER_USERNAME","$HOSTINGER_PASSWORD" "${protocol}://${host}:${port}" -e "
+              set cmd:fail-exit yes;
+              set net:max-retries 5;
+              set net:timeout 30;
+              set net:reconnect-interval-base 5;
+              set sftp:auto-confirm yes;
+              set ssl:verify-certificate no;
+              set ftp:ssl-allow no;
+              set ftp:passive-mode yes;
+              ${cd_commands}
+              set cmd:fail-exit no;
+              rm index.php;
+              rm default.php;
+              set cmd:fail-exit yes;
+              mirror --reverse --verbose --parallel=2 dist/ .;
+              bye
+            "
           done

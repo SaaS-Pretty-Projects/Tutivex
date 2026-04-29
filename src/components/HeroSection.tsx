@@ -288,7 +288,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="min-h-screen relative overflow-hidden flex flex-col bg-black">
+    <section className="min-h-screen relative overflow-x-hidden flex flex-col bg-black">
       <video
         ref={videoRef}
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4"
@@ -296,9 +296,9 @@ export default function HeroSection() {
         autoPlay
         playsInline
         preload="auto"
-        className="absolute inset-0 w-full h-full object-cover object-bottom opacity-0"
+        className="absolute inset-0 w-full h-full object-cover object-bottom opacity-0 pointer-events-none"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black z-[1]"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black z-[1] pointer-events-none"></div>
       
       {/* Navbar */}
       <nav className="relative z-20 px-6 py-6 w-full">

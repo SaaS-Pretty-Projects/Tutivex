@@ -52,6 +52,16 @@ export default function HeroSection() {
     }
   }, []);
 
+  const syncUserProfileSafely = useCallback(async (signedInUser: NonNullable<typeof auth.currentUser>) => {
+    try {
+      await upsertUserProfile(signedInUser);
+    } catch (profileError) {
+      // Do not block successful authentication if profile bootstrap fails.
+      console.error('Profile sync failed after successful auth', profileError);
+      setLoginMessage('Signed in, but profile setup is delayed. You can continue.');
+    }
+  }, [upsertUserProfile]);
+
   const provider = () => {
     const googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({prompt: 'select_account'});
@@ -74,10 +84,10 @@ export default function HeroSection() {
         if (cancelled) return;
 
         if (result?.user) {
-          await upsertUserProfile(result.user);
+          await syncUserProfileSafely(result.user);
           if (!cancelled) resumeAfterLogin();
         } else if (auth.currentUser && (localStorage.getItem('teachenza:postLoginPath') || localStorage.getItem('tutivex:postLoginPath'))) {
-          await upsertUserProfile(auth.currentUser);
+          await syncUserProfileSafely(auth.currentUser);
           if (!cancelled) resumeAfterLogin();
         }
       } catch (error) {
@@ -90,7 +100,7 @@ export default function HeroSection() {
 
     completeRedirectLogin();
     return () => { cancelled = true; };
-  }, [resumeAfterLogin, upsertUserProfile]);
+  }, [resumeAfterLogin, syncUserProfileSafely]);
 
   const startRedirectLogin = () => {
     localStorage.setItem('teachenza:postLoginPath', '/dashboard');
@@ -127,7 +137,7 @@ export default function HeroSection() {
     setLoginMessage('');
     try {
       const result = await signInWithPopup(auth, provider());
-      await upsertUserProfile(result.user);
+      await syncUserProfileSafely(result.user);
       resumeAfterLogin();
     } catch (error) {
       console.error('Login failed', error);
@@ -145,7 +155,11 @@ export default function HeroSection() {
         startRedirectLogin();
         return;
       }
-      setLoginMessage('Google sign-in failed. Try the redirect sign-in option.');
+      if (code === 'auth/operation-not-allowed') {
+        setLoginMessage('Google sign-in is disabled in Firebase Auth provider settings.');
+      } else {
+        setLoginMessage('Google sign-in failed. Try the redirect sign-in option.');
+      }
     } finally {
       setLoginBusy(false);
     }
@@ -175,14 +189,15 @@ export default function HeroSection() {
     resetEmailFeedback();
 
     try {
+      let credential: Awaited<ReturnType<typeof signInWithEmailAndPassword>> | Awaited<ReturnType<typeof createUserWithEmailAndPassword>>;
       if (emailMode === 'signup') {
-        const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
         await updateProfile(credential.user, {displayName: fullName.trim()});
-        await upsertUserProfile(credential.user);
       } else {
-        const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
-        await upsertUserProfile(credential.user);
+        credential = await signInWithEmailAndPassword(auth, email.trim(), password);
       }
+
+      await syncUserProfileSafely(credential.user);
 
       setShowEmailAuth(false);
       setPassword('');
@@ -202,6 +217,10 @@ export default function HeroSection() {
         setEmailMessage('Invalid email or password.');
       } else if (code === 'auth/too-many-requests') {
         setEmailMessage('Too many attempts. Please wait and try again.');
+      } else if (code === 'auth/operation-not-allowed') {
+        setEmailMessage('Email/password sign-in is disabled in Firebase Auth provider settings.');
+      } else if (code === 'auth/network-request-failed') {
+        setEmailMessage('Network error. Check your connection and try again.');
       } else {
         setEmailMessage('Could not complete email/password sign-in right now.');
       }
@@ -407,15 +426,20 @@ export default function HeroSection() {
             ) : null}
           </div>
         ) : null}
-        <AnimatePresence>
+        <AnimatePresence initial={false} mode="wait">
         {showEmailAuth && !user ? (
           <motion.div
             key="auth-panel"
             className="auth-panel mt-6 w-full max-w-md rounded-3xl border border-white/15 bg-zinc-950/90 p-5 text-left text-white shadow-[0_24px_80px_#000000AA] backdrop-blur-md overflow-hidden"
+            layout
             initial={{ opacity: 0, y: -16, scaleY: 0.94, transformOrigin: 'top center' }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{ opacity: 0, y: -10, scaleY: 0.96 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{
+              duration: 0.3,
+              ease: [0.22, 1, 0.36, 1],
+              layout: {type: 'spring', stiffness: 280, damping: 34}
+            }}
           >
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm font-semibold tracking-wide text-white">
@@ -429,9 +453,18 @@ export default function HeroSection() {
                 Close
               </button>
             </div>
-            <form onSubmit={handleEmailAuth} className="space-y-3">
+            <motion.form layout onSubmit={handleEmailAuth} className="space-y-3">
+              <AnimatePresence initial={false} mode="popLayout">
               {emailMode === 'signup' ? (
-                <label className="block">
+                <motion.label
+                  key="signup-name-field"
+                  layout
+                  className="block overflow-hidden"
+                  initial={{opacity: 0, height: 0, y: -8}}
+                  animate={{opacity: 1, height: 'auto', y: 0}}
+                  exit={{opacity: 0, height: 0, y: -8}}
+                  transition={{duration: 0.22, ease: [0.22, 1, 0.36, 1]}}
+                >
                   <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Name</span>
                   <input
                     type="text"
@@ -444,8 +477,9 @@ export default function HeroSection() {
                     placeholder="Your full name"
                     autoComplete="name"
                   />
-                </label>
+                </motion.label>
               ) : null}
+              </AnimatePresence>
               <label className="block">
                 <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Email</span>
                 <input
@@ -501,7 +535,7 @@ export default function HeroSection() {
               >
                 {emailBusy ? 'Please wait...' : emailMode === 'signup' ? 'Create account' : 'Log in'}
               </button>
-            </form>
+            </motion.form>
             <div className="mt-3 text-center text-xs text-white/60">
               {emailMode === 'signup' ? 'Already have an account?' : 'Need an account?'}{' '}
               <button

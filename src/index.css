@@ -204,7 +204,7 @@
   }
 
   .theme-light .theme-force-dark .auth-panel {
-    background-color: rgba(3, 3, 3, 0.82) !important;
+    background-color: #050505 !important;
     border-color: rgba(255, 255, 255, 0.16) !important;
     color: rgba(255, 255, 255, 0.92) !important;
   }

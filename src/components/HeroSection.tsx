@@ -1,4 +1,5 @@
 import {type FormEvent, useCallback, useEffect, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {AnimatePresence, motion} from 'motion/react';
 import {ArrowRight, Globe} from 'lucide-react';
 import {auth, db} from '../lib/firebase';
@@ -180,6 +181,10 @@ export default function HeroSection() {
       setEmailMessage('Email and password are required.');
       return;
     }
+    if (password.length < 6) {
+      setEmailMessage('Password must be at least 6 characters.');
+      return;
+    }
     if (emailMode === 'signup' && fullName.trim().length < 2) {
       setEmailMessage('Please add your name to complete sign up.');
       return;
@@ -314,8 +319,18 @@ export default function HeroSection() {
       <nav className="relative z-20 px-6 py-6 w-full">
         <div className="liquid-glass rounded-full max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center">
-            <Globe className="w-6 h-6 text-white" />
-            <span className="text-white font-semibold text-lg ml-2">Teachenza</span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEmailAuth(false);
+                window.scrollTo({top: 0, behavior: 'smooth'});
+              }}
+              className="inline-flex items-center rounded-full text-white transition hover:text-white/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70"
+              aria-label="Go to Teachenza home"
+            >
+              <Globe className="w-6 h-6" />
+              <span className="font-semibold text-lg ml-2">Teachenza</span>
+            </button>
             
             <div className="hidden md:flex items-center gap-8 ml-10">
               <a href="#courses" className="text-white/80 hover:text-white text-sm font-medium transition-colors">Courses</a>
@@ -365,193 +380,207 @@ export default function HeroSection() {
           Teachenza now carries the learning experience beyond the landing page with a real internal workspace:
           active roadmaps, progress-aware curriculum, and a profile that shapes how your sessions unfold.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => { if (user) { navigate('/dashboard'); } else { setEmailMode('login'); setShowEmailAuth(true); } }}
-            disabled={loginBusy}
-            className="bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center gap-2"
-          >
-            {user ? 'Open Dashboard' : 'Start Learning'}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-          {!user ? (
+        <div className="relative flex w-full flex-col items-center">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={handleLogin}
+              onClick={() => { if (user) { navigate('/dashboard'); } else { setEmailMode('login'); setShowEmailAuth(true); } }}
               disabled={loginBusy}
-              className="liquid-glass rounded-full px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors disabled:opacity-50"
+              className="bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:bg-gray-200 transition-colors inline-flex items-center gap-2"
             >
-              {loginBusy ? 'Opening Google...' : 'Continue with Google'}
+              {user ? 'Open Dashboard' : 'Start Learning'}
+              <ArrowRight className="w-4 h-4" />
             </button>
-          ) : null}
-          <a
-            href="#courses"
-            className="liquid-glass rounded-full px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors"
-          >
-            Explore Curriculum
-          </a>
-          {canPreviewDashboard && !user ? (
-            <button
-              type="button"
-              onClick={handlePreviewDashboard}
+            <a
+              href="#courses"
               className="liquid-glass rounded-full px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors"
             >
-              Codex preview
-            </button>
-          ) : null}
-        </div>
-        {loginMessage ? (
-          <div className="mt-5 flex flex-col items-center gap-3">
-            <p className="max-w-md text-sm text-white/60">{loginMessage}</p>
-            {!user ? (
-              <div className="flex flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={startRedirectLogin}
-                  className="liquid-glass rounded-full px-5 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors"
-                >
-                  Try redirect sign-in
-                </button>
-                {canPreviewDashboard ? (
-                  <button
-                    type="button"
-                    onClick={handlePreviewDashboard}
-                    className="rounded-full bg-white/90 px-5 py-2 text-xs font-semibold text-black hover:bg-white transition-colors"
-                  >
-                    Open local preview dashboard
-                  </button>
-                ) : null}
-              </div>
+              Explore Curriculum
+            </a>
+            {canPreviewDashboard && !user ? (
+              <button
+                type="button"
+                onClick={handlePreviewDashboard}
+                className="liquid-glass rounded-full px-6 py-3 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+              >
+                Codex preview
+              </button>
             ) : null}
           </div>
-        ) : null}
-        <AnimatePresence initial={false} mode="wait">
-        {showEmailAuth && !user ? (
-          <motion.div
-            key="auth-panel"
-            className="auth-panel mt-6 w-full max-w-md rounded-3xl border border-white/15 bg-zinc-950/90 p-5 text-left text-white shadow-[0_24px_80px_#000000AA] backdrop-blur-md overflow-hidden"
-            layout
-            initial={{ opacity: 0, y: -16, scaleY: 0.94, transformOrigin: 'top center' }}
-            animate={{ opacity: 1, y: 0, scaleY: 1 }}
-            exit={{ opacity: 0, y: -10, scaleY: 0.96 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.22, 1, 0.36, 1],
-              layout: {type: 'spring', stiffness: 280, damping: 34}
-            }}
-          >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold tracking-wide text-white">
-                {emailMode === 'signup' ? 'Create your account' : 'Log in with email'}
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowEmailAuth(false)}
-                className="text-xs text-white/60 hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-            <motion.form layout onSubmit={handleEmailAuth} className="space-y-3">
-              <AnimatePresence initial={false} mode="popLayout">
-              {emailMode === 'signup' ? (
-                <motion.label
-                  key="signup-name-field"
-                  layout
-                  className="block overflow-hidden"
-                  initial={{opacity: 0, height: 0, y: -8}}
-                  animate={{opacity: 1, height: 'auto', y: 0}}
-                  exit={{opacity: 0, height: 0, y: -8}}
-                  transition={{duration: 0.22, ease: [0.22, 1, 0.36, 1]}}
-                >
-                  <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Name</span>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(event) => {
-                      setFullName(event.target.value);
-                      resetEmailFeedback();
-                    }}
-                    className="auth-input w-full rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-sm text-white outline-none transition focus:border-white/40"
-                    placeholder="Your full name"
-                    autoComplete="name"
-                  />
-                </motion.label>
+          {loginMessage ? (
+            <div className="mt-5 flex flex-col items-center gap-3">
+              <p className="max-w-md text-sm text-white/60">{loginMessage}</p>
+              {!user ? (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={startRedirectLogin}
+                    className="liquid-glass rounded-full px-5 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors"
+                  >
+                    Try redirect sign-in
+                  </button>
+                  {canPreviewDashboard ? (
+                    <button
+                      type="button"
+                      onClick={handlePreviewDashboard}
+                      className="rounded-full bg-white/90 px-5 py-2 text-xs font-semibold text-black hover:bg-white transition-colors"
+                    >
+                      Open local preview dashboard
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
-              </AnimatePresence>
-              <label className="block">
-                <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Email</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    resetEmailFeedback();
-                  }}
-                  className="auth-input w-full rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-sm text-white outline-none transition focus:border-white/40"
-                  placeholder="you@example.com"
-                  autoComplete="username"
-                  required
-                />
-              </label>
-              <div className="block">
-                <label htmlFor={emailMode === 'signup' ? 'signup-password' : 'login-password'} className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Password</label>
-                {emailMode === 'signup' ? (
-                  <input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      resetEmailFeedback();
-                    }}
-                    className="auth-input w-full rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-sm text-white outline-none transition focus:border-white/40"
-                    placeholder="At least 6 characters"
-                    autoComplete="new-password"
-                    required
-                  />
-                ) : (
-                  <input
-                    id="login-password"
-                    type="password"
-                    value={password}
-                    onChange={(event) => {
-                      setPassword(event.target.value);
-                      resetEmailFeedback();
-                    }}
-                    className="auth-input w-full rounded-xl border border-white/15 bg-white/[0.08] px-3 py-2 text-sm text-white outline-none transition focus:border-white/40"
-                    placeholder="At least 6 characters"
-                    autoComplete="current-password"
-                    required
-                  />
-                )}
-              </div>
-              {emailMessage ? <p className="text-xs text-amber-200">{emailMessage}</p> : null}
-              <button
-                type="submit"
-                disabled={emailBusy}
-                className="w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-gray-200 disabled:opacity-60"
-              >
-                {emailBusy ? 'Please wait...' : emailMode === 'signup' ? 'Create account' : 'Log in'}
-              </button>
-            </motion.form>
-            <div className="mt-3 text-center text-xs text-white/60">
-              {emailMode === 'signup' ? 'Already have an account?' : 'Need an account?'}{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setEmailMode(emailMode === 'signup' ? 'login' : 'signup');
-                  resetEmailFeedback();
-                }}
-                className="font-semibold text-white/80 hover:text-white"
-              >
-                {emailMode === 'signup' ? 'Log in' : 'Create one'}
-              </button>
             </div>
-          </motion.div>
-        ) : null}
-        </AnimatePresence>
+          ) : null}
+          {typeof document !== 'undefined' ? createPortal(
+          <AnimatePresence initial={false} mode="wait">
+            {showEmailAuth && !user ? (
+              <motion.div
+                key="auth-panel-layer"
+                className="theme-force-dark pointer-events-none fixed inset-x-4 bottom-4 z-[80] flex justify-center md:bottom-auto md:top-[7rem]"
+                initial={{opacity: 0, y: -10}}
+                animate={{opacity: 1, y: 0}}
+                exit={{opacity: 0, y: -8}}
+                transition={{duration: 0.24, ease: [0.22, 1, 0.36, 1]}}
+              >
+                <motion.div
+                  key="auth-panel"
+                  role="dialog"
+                  aria-label={emailMode === 'signup' ? 'Create your account' : 'Log in with email'}
+                  className="auth-panel pointer-events-auto max-h-[calc(100svh-2rem)] w-full max-w-[24rem] overflow-y-auto rounded-[1.75rem] border border-white/15 bg-[#050505] p-4 text-left text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_12px_28px_rgba(0,0,0,0.2)] sm:p-5"
+                  initial={{opacity: 0, y: -8, scale: 0.99, transformOrigin: 'top center'}}
+                  animate={{opacity: 1, y: 0, scale: 1}}
+                  exit={{opacity: 0, y: -6, scale: 0.99}}
+                  transition={{duration: 0.26, ease: [0.22, 1, 0.36, 1]}}
+                >
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <p className="text-base font-semibold tracking-tight text-white">
+                      {emailMode === 'signup' ? 'Create your account' : 'Log in with email'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailAuth(false)}
+                      className="text-sm font-medium text-white/55 transition hover:text-white"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogin}
+                    disabled={loginBusy}
+                    className="flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.045] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/[0.09] active:scale-[0.99] disabled:opacity-50"
+                  >
+                    <span className="grid size-5 place-items-center rounded-full bg-white text-[0.65rem] font-bold text-black">G</span>
+                    {loginBusy ? 'Opening Google...' : 'Continue with Google'}
+                  </button>
+                  <div className="my-4 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-white/10" />
+                    <span className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/45">or</span>
+                    <span className="h-px flex-1 bg-white/10" />
+                  </div>
+                  <motion.form onSubmit={handleEmailAuth} className="space-y-3">
+                    <AnimatePresence initial={false} mode="popLayout">
+                      {emailMode === 'signup' ? (
+                        <motion.label
+                          key="signup-name-field"
+                          className="block overflow-hidden"
+                          initial={{opacity: 0, height: 0, y: -8}}
+                          animate={{opacity: 1, height: 'auto', y: 0}}
+                          exit={{opacity: 0, height: 0, y: -8}}
+                          transition={{duration: 0.22, ease: [0.22, 1, 0.36, 1]}}
+                        >
+                          <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Name</span>
+                          <input
+                            type="text"
+                            value={fullName}
+                            onChange={(event) => {
+                              setFullName(event.target.value);
+                              resetEmailFeedback();
+                            }}
+                            className="auth-input w-full rounded-2xl border border-white/15 bg-white/[0.055] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/36 focus:border-white/32 focus:bg-white/[0.08]"
+                            placeholder="Your full name"
+                            autoComplete="name"
+                          />
+                        </motion.label>
+                      ) : null}
+                    </AnimatePresence>
+                    <label className="block">
+                      <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Email</span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => {
+                          setEmail(event.target.value);
+                          resetEmailFeedback();
+                        }}
+                        className="auth-input w-full rounded-2xl border border-white/15 bg-white/[0.055] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/36 focus:border-white/32 focus:bg-white/[0.08]"
+                        placeholder="you@example.com"
+                        autoComplete="username"
+                        required
+                      />
+                    </label>
+                    <div className="block">
+                      <label htmlFor={emailMode === 'signup' ? 'signup-password' : 'login-password'} className="mb-1 block text-xs uppercase tracking-[0.2em] text-white/50">Password</label>
+                      {emailMode === 'signup' ? (
+                        <input
+                          id="signup-password"
+                          type="password"
+                          value={password}
+                          onChange={(event) => {
+                            setPassword(event.target.value);
+                            resetEmailFeedback();
+                          }}
+                          className="auth-input w-full rounded-2xl border border-white/15 bg-white/[0.055] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/36 focus:border-white/32 focus:bg-white/[0.08]"
+                          placeholder="At least 6 characters"
+                          autoComplete="new-password"
+                          required
+                        />
+                      ) : (
+                        <input
+                          id="login-password"
+                          type="password"
+                          value={password}
+                          onChange={(event) => {
+                            setPassword(event.target.value);
+                            resetEmailFeedback();
+                          }}
+                          className="auth-input w-full rounded-2xl border border-white/15 bg-white/[0.055] px-3.5 py-2.5 text-sm text-white outline-none transition placeholder:text-white/36 focus:border-white/32 focus:bg-white/[0.08]"
+                          placeholder="At least 6 characters"
+                          autoComplete="current-password"
+                          required
+                        />
+                      )}
+                    </div>
+                    <p className="min-h-4 text-xs text-amber-200">{emailMessage}</p>
+                    <button
+                      type="submit"
+                      disabled={emailBusy}
+                      className="w-full rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-gray-200 active:scale-[0.99] disabled:opacity-60"
+                    >
+                      {emailBusy ? 'Please wait...' : emailMode === 'signup' ? 'Create account' : 'Log in'}
+                    </button>
+                  </motion.form>
+                  <div className="mt-3 text-center text-xs text-white/55">
+                    {emailMode === 'signup' ? 'Already have an account?' : 'Need an account?'}{' '}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmailMode(emailMode === 'signup' ? 'login' : 'signup');
+                        resetEmailFeedback();
+                      }}
+                      className="font-semibold text-white/80 transition hover:text-white"
+                    >
+                      {emailMode === 'signup' ? 'Log in' : 'Create one'}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>,
+            document.body,
+          ) : null}
+        </div>
       </main>
     </section>
   );

@@ -5,7 +5,6 @@ import {GoogleAuthProvider, signInWithPopup, signOut} from 'firebase/auth';
 import {doc, getDoc, setDoc, serverTimestamp} from 'firebase/firestore';
 import {useNavigate} from 'react-router-dom';
 import {defaultMemberProfile} from '../lib/learningData';
-import ThemeToggle from './ThemeToggle';
 
 export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -114,7 +113,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="theme-force-dark min-h-screen relative overflow-hidden flex flex-col bg-black">
+    <section className="min-h-screen relative overflow-hidden flex flex-col bg-black">
       <video
         ref={videoRef}
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_074625_a81f018a-956b-43fb-9aee-4d1508e30e6a.mp4"
@@ -142,7 +141,6 @@ export default function HeroSection() {
           </div>
           
           <div className="flex items-center gap-4">
-            <ThemeToggle compact />
             {user ? (
               <>
                 <span className="hidden md:block text-white text-sm opacity-60">Hi, {user.displayName || user.email?.split('@')[0]}</span>

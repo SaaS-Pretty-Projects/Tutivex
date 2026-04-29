@@ -19,7 +19,7 @@ import {ThemeProvider} from './lib/theme';
 
 function LandingPage() {
   return (
-    <>
+    <div className="theme-force-dark bg-black text-white">
       <HeroSection />
       <AboutSection />
       <FeaturedVideoSection />
@@ -27,7 +27,7 @@ function LandingPage() {
       <ServicesSection />
       <CTASection />
       <Footer />
-    </>
+    </div>
   );
 }
 

@@ -23,7 +23,7 @@ service cloud.firestore {
     function isValidId(id) { 
       // Firestore IDs cannot include '/'; allow other characters to avoid
       // rejecting provider-generated auth UIDs and external invoice IDs.
-      return id is string && id.size() > 0 && id.size() <= 128 && !id.matches('.*\/.*'); 
+      return id is string && id.size() > 0 && id.size() <= 128 && !id.matches('.*[/].*');
     }
 
     // Entity Validation Helpers

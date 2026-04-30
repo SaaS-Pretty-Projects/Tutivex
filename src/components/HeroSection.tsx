@@ -5,11 +5,9 @@ import {ArrowRight, Globe} from 'lucide-react';
 import {auth, db} from '../lib/firebase';
 import {
   createUserWithEmailAndPassword,
-  getRedirectResult,
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   signInWithPopup,
-  signInWithRedirect,
   signOut,
   updateProfile,
 } from 'firebase/auth';
@@ -77,53 +75,25 @@ export default function HeroSection() {
   }, [navigate]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function completeRedirectLogin() {
-      try {
-        const result = await getRedirectResult(auth);
-        if (cancelled) return;
-
-        if (result?.user) {
-          await syncUserProfileSafely(result.user);
-          if (!cancelled) resumeAfterLogin();
-        } else if (auth.currentUser && (localStorage.getItem('teachenza:postLoginPath') || localStorage.getItem('tutivex:postLoginPath'))) {
-          await syncUserProfileSafely(auth.currentUser);
-          if (!cancelled) resumeAfterLogin();
-        }
-      } catch (error) {
-        console.error('Redirect login failed', error);
-        if (!cancelled) {
-          setLoginMessage('Google redirect sign-in could not finish. Check that this domain is authorized in Firebase.');
-        }
-      }
-    }
-
-    completeRedirectLogin();
-    return () => { cancelled = true; };
+    return () => {};
   }, [resumeAfterLogin, syncUserProfileSafely]);
 
-  const startRedirectLogin = () => {
-    localStorage.setItem('teachenza:postLoginPath', '/dashboard');
-    localStorage.setItem('tutivex:postLoginPath', '/dashboard');
-    setLoginMessage('Opening Google sign-in in this browser...');
-    window.setTimeout(() => {
+  const startPopupLogin = async () => {
+    setLoginBusy(true);
+    setLoginMessage('');
+    try {
+      const result = await signInWithPopup(auth, provider());
+      await syncUserProfileSafely(result.user);
+      resumeAfterLogin();
+    } catch (error) {
+      console.error('Popup login failed', error);
+      const code = typeof error === 'object' && error && 'code' in error ? String((error as {code: string}).code) : '';
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        setLoginMessage('Google sign-in could not complete. Please try again.');
+      }
+    } finally {
       setLoginBusy(false);
-      setLoginMessage(
-        canPreviewDashboard
-          ? 'Google sign-in is blocked in this embedded browser. Use local preview to inspect the dashboard here.'
-          : 'Google sign-in did not open in this browser. Try again in a full browser window.',
-      );
-    }, 2500);
-    void signInWithRedirect(auth, provider()).catch((error) => {
-      console.error('Redirect login failed to start', error);
-      setLoginBusy(false);
-      setLoginMessage(
-        canPreviewDashboard
-          ? 'Google sign-in is blocked in this embedded browser. Use local preview to inspect the dashboard here.'
-          : 'Google sign-in could not open in this browser.',
-      );
-    });
+    }
   };
 
   const handlePreviewDashboard = () => {
@@ -133,37 +103,8 @@ export default function HeroSection() {
     navigate('/dashboard');
   };
 
-  const handleLogin = async () => {
-    setLoginBusy(true);
-    setLoginMessage('');
-    try {
-      const result = await signInWithPopup(auth, provider());
-      await syncUserProfileSafely(result.user);
-      resumeAfterLogin();
-    } catch (error) {
-      console.error('Login failed', error);
-      const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : '';
-      if (code === 'auth/unauthorized-domain') {
-        setLoginMessage('This domain is not authorized for Firebase Google sign-in yet.');
-        return;
-      }
-      if (
-        code === 'auth/popup-blocked' ||
-        code === 'auth/popup-closed-by-user' ||
-        code === 'auth/cancelled-popup-request' ||
-        code === 'auth/operation-not-supported-in-this-environment'
-      ) {
-        startRedirectLogin();
-        return;
-      }
-      if (code === 'auth/operation-not-allowed') {
-        setLoginMessage('Google sign-in is disabled in Firebase Auth provider settings.');
-      } else {
-        setLoginMessage('Google sign-in failed. Try the redirect sign-in option.');
-      }
-    } finally {
-      setLoginBusy(false);
-    }
+  const handleLogin = () => {
+    void startPopupLogin();
   };
 
   const handleLogout = async () => {
@@ -414,10 +355,10 @@ export default function HeroSection() {
                 <div className="flex flex-wrap justify-center gap-2">
                   <button
                     type="button"
-                    onClick={startRedirectLogin}
+                    onClick={() => void startPopupLogin()}
                     className="liquid-glass rounded-full px-5 py-2 text-xs font-semibold text-white hover:bg-white/10 transition-colors"
                   >
-                    Try redirect sign-in
+                    Try Google sign-in again
                   </button>
                   {canPreviewDashboard ? (
                     <button

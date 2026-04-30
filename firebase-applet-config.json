@@ -1,10 +1,10 @@
 {
-  "projectId": "sample-firebase-ai-app-9cee4",
-  "appId": "1:141806968902:web:efc12b35f5ed5146e7ea47",
-  "apiKey": "AIzaSyBSCqwU1HNZdM2Mk2oOKArCidoc4FsvbcU",
-  "authDomain": "sample-firebase-ai-app-9cee4.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-0e73c385-eb8b-44ad-8d0b-940e22df006d",
-  "storageBucket": "sample-firebase-ai-app-9cee4.firebasestorage.app",
-  "messagingSenderId": "141806968902",
+  "projectId": "teachenza-com",
+  "appId": "1:831186898233:web:10f55a4eb7a18b92f16ce8",
+  "apiKey": "AIzaSyDgCruab4g9EKRmx1cy51IMJTMBQv85oYY",
+  "authDomain": "teachenza-com.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "teachenza-com.firebasestorage.app",
+  "messagingSenderId": "831186898233",
   "measurementId": ""
 }
